@@ -3,14 +3,30 @@ import '../data/mock_repository.dart';
 import '../models/menu_item.dart';
 import '../models/order.dart';
 import '../models/table.dart';
+import '../models/reservation.dart';
 
 class CartModel extends ChangeNotifier {
   final MockRepository repo;
   final String tableId;
   late final String orderId;
+  final List<OrderLine>? prepaidItems;
 
-  CartModel({required this.repo, required this.tableId}) {
-    orderId = repo.createOrder(tableId).id;
+  CartModel({
+    required this.repo,
+    required this.tableId,
+    this.prepaidItems,
+  }) {
+    final order = repo.createOrder(tableId);
+    orderId = order.id;
+    
+    // Si des items prépayés sont fournis, les ajouter à la commande
+    if (prepaidItems != null) {
+      for (final line in prepaidItems!) {
+        for (int i = 0; i < line.quantity; i++) {
+          repo.addItem(orderId, line.item);
+        }
+      }
+    }
   }
 
   void add(MenuItemModel item) {
@@ -53,7 +69,14 @@ class CartModel extends ChangeNotifier {
 class OrderScreen extends StatefulWidget {
   final MockRepository repo;
   final DiningTable table;
-  const OrderScreen({super.key, required this.repo, required this.table});
+  final Reservation? reservation; // Réservation optionnelle (pour menu prépayé)
+
+  const OrderScreen({
+    super.key,
+    required this.repo,
+    required this.table,
+    this.reservation,
+  });
 
   @override
   State<OrderScreen> createState() => _OrderScreenState();
@@ -67,14 +90,35 @@ class _OrderScreenState extends State<OrderScreen> {
   @override
   void initState() {
     super.initState();
-    _cart = CartModel(repo: widget.repo, tableId: widget.table.id);
+    _cart = CartModel(
+      repo: widget.repo,
+      tableId: widget.table.id,
+      prepaidItems: widget.reservation?.prepaidMenuItems,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final isPrepaid = widget.reservation?.type == ReservationType.prepaidMenu;
+    
     return Scaffold(
       appBar: AppBar(
-        title: Text('Commande - Table ${widget.table.number}'),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Commande - Table ${widget.table.number}'),
+            if (isPrepaid)
+              Text(
+                'Menu prépayé',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.normal,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+          ],
+        ),
         actions: [
           AnimatedBuilder(
             animation: _cart,
@@ -123,6 +167,46 @@ class _OrderScreenState extends State<OrderScreen> {
       ),
       body: Column(
         children: [
+          if (isPrepaid)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              color: Theme.of(context).colorScheme.primaryContainer,
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.restaurant_menu,
+                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Menu prépayé',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onPrimaryContainer,
+                          ),
+                        ),
+                        Text(
+                          'Vous pouvez ajouter des extras si nécessaire',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onPrimaryContainer,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
           _Filters(
             category: _categoryFilter,
             temperature: _tempFilter,

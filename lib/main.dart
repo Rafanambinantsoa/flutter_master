@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'data/mock_repository.dart';
+import 'services/mock_api_service.dart';
 import 'router.dart';
 
 void main() {
@@ -24,6 +25,7 @@ class RestaurantServerApp extends StatelessWidget {
     );
 
     final repo = MockRepository();
+    final apiService = MockApiService();
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Serveur',
@@ -63,7 +65,15 @@ class RestaurantServerApp extends StatelessWidget {
         ),
       ),
       initialRoute: '/login',
-      onGenerateRoute: (settings) => appRouter(settings, repo),
+      onGenerateRoute: (settings) => appRouter(settings, repo, apiService),
+      // Redirection vers la sélection de client après login
+      onUnknownRoute: (settings) {
+        return MaterialPageRoute(
+          builder: (_) => Scaffold(
+            body: Center(child: Text('Route inconnue: ${settings.name}')),
+          ),
+        );
+      },
     );
   }
 }

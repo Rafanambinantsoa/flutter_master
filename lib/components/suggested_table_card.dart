@@ -4,11 +4,13 @@ import '../models/table.dart';
 class SuggestedTableCard extends StatefulWidget {
   final DiningTable table;
   final VoidCallback onSelect;
+  final bool isAvailable; // Disponibilité dynamique
 
   const SuggestedTableCard({
     super.key,
     required this.table,
     required this.onSelect,
+    this.isAvailable = true,
   });
 
   @override
@@ -24,7 +26,7 @@ class _SuggestedTableCardState extends State<SuggestedTableCard> {
       builder: (context, constraints) {
         final bool isCompact = constraints.maxWidth < 360;
         final bool useDark =
-            widget.table.isOccupied; // dark when occupied, light when free
+            !widget.isAvailable; // dark when unavailable, light when available
 
         return AnimatedScale(
           duration: const Duration(milliseconds: 200),
@@ -73,6 +75,7 @@ class _SuggestedTableCardState extends State<SuggestedTableCard> {
                         maxWidth: constraints.maxWidth,
                         foreground: useDark ? Colors.white : Colors.black,
                         dark: useDark,
+                        isAvailable: widget.isAvailable,
                       ),
                     ),
                     // arrow top-right
@@ -104,6 +107,7 @@ class _CardContent extends StatelessWidget {
   final double maxWidth;
   final Color foreground;
   final bool dark;
+  final bool isAvailable;
 
   const _CardContent({
     required this.table,
@@ -112,11 +116,12 @@ class _CardContent extends StatelessWidget {
     required this.maxWidth,
     required this.foreground,
     required this.dark,
+    required this.isAvailable,
   });
 
   @override
   Widget build(BuildContext context) {
-    final Color accent = table.isOccupied
+    final Color accent = !isAvailable
         ? Colors.redAccent
         : Color.fromARGB(255, 97, 94, 94);
 
@@ -172,7 +177,7 @@ class _CardContent extends StatelessWidget {
                         dark: dark,
                       ),
                       _InfoChip(
-                        label: "Occupée",
+                        label: isAvailable ? "Disponible" : "Indisponible",
                         color: accent,
                         foreground: foreground,
                         dark: dark,

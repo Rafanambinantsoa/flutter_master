@@ -4,18 +4,24 @@ import '../models/table.dart';
 class TableTileCard extends StatelessWidget {
   final DiningTable table;
   final VoidCallback onTap;
+  final bool isAvailable; // Disponibilité dynamique
 
-  const TableTileCard({super.key, required this.table, required this.onTap});
+  const TableTileCard({
+    super.key,
+    required this.table,
+    required this.onTap,
+    this.isAvailable = true,
+  });
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final bool isCompact = constraints.maxWidth < 160;
-        final bool useDark = table.isOccupied;
+        final bool useDark = !isAvailable;
         final Color base = useDark ? const Color(0xFF111111) : Colors.white;
         final Color fg = useDark ? Colors.white : Colors.black;
-        final Color accent = table.isOccupied
+        final Color accent = !isAvailable
             ? Colors.redAccent
             : Color.fromARGB(255, 97, 94, 94);
 
@@ -91,7 +97,7 @@ class TableTileCard extends StatelessWidget {
                   children: [
                     _MiniChip(label: 'Cap. ${table.capacity}', dark: useDark),
                     _MiniChip(
-                      label: table.isOccupied ? 'Occupée' : 'Libre',
+                      label: isAvailable ? 'Disponible' : 'Indisponible',
                       color: accent,
                       dark: useDark,
                     ),

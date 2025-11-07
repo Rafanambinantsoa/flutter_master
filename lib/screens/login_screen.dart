@@ -308,9 +308,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if ((username == 'serveur' && password == 'motdepasse') ||
         (username == 'manager' && password == 'motdepasse')) {
-      // Success - navigate to home
+      // Success - navigate to client selection
       if (mounted) {
-        Navigator.of(context).pushReplacementNamed('/');
+        Navigator.of(context).pushReplacementNamed('/client-selection');
       }
     } else {
       // Show error

@@ -50,14 +50,6 @@ class MockRepository extends ChangeNotifier {
 
   final Map<String, OrderModel> _orders = {};
 
-  DiningTable? findFreeTable({int people = 2}) {
-    return tables.firstWhere(
-      (t) => !t.isOccupied && t.capacity >= people,
-      orElse: () =>
-          tables.firstWhere((t) => !t.isOccupied, orElse: () => tables.first),
-    );
-  }
-
   OrderModel createOrder(String tableId) {
     final order = OrderModel(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -65,7 +57,6 @@ class MockRepository extends ChangeNotifier {
       createdAt: DateTime.now(),
     );
     _orders[order.id] = order;
-    tables.firstWhere((t) => t.id == tableId).isOccupied = true;
     notifyListeners();
     return order;
   }
