@@ -4,7 +4,7 @@ import '../models/table.dart';
 import '../services/mock_api_service.dart';
 import '../components/suggested_table_card.dart';
 import '../components/table_tile_card.dart';
-import '../components/custom_drawer.dart';
+import '../widgets/session_drawer.dart';
 
 class AccueilScreen extends StatefulWidget {
   final MockRepository repo;
@@ -107,7 +107,7 @@ class _AccueilScreenState extends State<AccueilScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      drawer: const CustomDrawer(serverName: 'John Doe'),
+      drawer: const SessionDrawer(),
       appBar: AppBar(
         leading: Builder(
           builder: (context) => IconButton(

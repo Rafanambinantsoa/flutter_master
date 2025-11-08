@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../components/custom_drawer.dart';
+import '../widgets/session_drawer.dart';
 
 class OrderDetailScreen extends StatelessWidget {
   final String id;
@@ -32,7 +32,7 @@ class OrderDetailScreen extends StatelessWidget {
     }
 
     return Scaffold(
-      drawer: const CustomDrawer(serverName: 'John Doe'),
+      drawer: const SessionDrawer(),
       appBar: AppBar(
         leading: Builder(
           builder: (context) => IconButton(

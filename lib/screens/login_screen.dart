@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
+import '../services/session_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -9,14 +11,18 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _usernameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
   bool _isLoading = false;
+  String? _errorMessage;
+
+  final AuthService _authService = AuthService();
+  final SessionService _sessionService = SessionService();
 
   @override
   void dispose() {
-    _usernameController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -109,14 +115,15 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              // Username Field
+                              // Email Field
                               TextFormField(
-                                controller: _usernameController,
+                                controller: _emailController,
+                                keyboardType: TextInputType.emailAddress,
                                 decoration: InputDecoration(
-                                  labelText: 'Nom d\'utilisateur',
-                                  hintText: 'Entrez votre nom d\'utilisateur',
+                                  labelText: 'Email',
+                                  hintText: 'Entrez votre email',
                                   prefixIcon: Icon(
-                                    Icons.person_outline,
+                                    Icons.email_outlined,
                                     color: cs.primary,
                                   ),
                                   border: OutlineInputBorder(
@@ -135,10 +142,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                       width: 2,
                                     ),
                                   ),
+                                  errorText: _errorMessage,
                                 ),
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
-                                    return 'Veuillez entrer votre nom d\'utilisateur';
+                                    return 'Veuillez entrer votre email';
+                                  }
+                                  if (!value.contains('@')) {
+                                    return 'Veuillez entrer un email valide';
                                   }
                                   return null;
                                 },
@@ -234,39 +245,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                       ),
                               ),
                               const SizedBox(height: 16),
-
-                              // Demo Credentials
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: cs.secondaryContainer.withOpacity(0.5),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: cs.outlineVariant.withOpacity(0.5),
-                                  ),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Comptes de démonstration:',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                        color: cs.onSurfaceVariant,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Serveur: serveur / motdepasse\nManager: manager / motdepasse',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color: cs.onSurfaceVariant,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
                             ],
                           ),
                         ),
@@ -297,27 +275,37 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() {
       _isLoading = true;
+      _errorMessage = null;
     });
 
-    // Simulate login delay
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      final email = _emailController.text.trim();
+      final password = _passwordController.text.trim();
 
-    // Simple demo authentication
-    final username = _usernameController.text.trim();
-    final password = _passwordController.text.trim();
+      // Appel à l'API de login
+      final loginResponse = await _authService.login(email, password);
 
-    if ((username == 'serveur' && password == 'motdepasse') ||
-        (username == 'manager' && password == 'motdepasse')) {
-      // Success - navigate to client selection
+      // Sauvegarder la session
+      await _sessionService.saveSession(
+        accessToken: loginResponse.accessToken,
+        serverName: loginResponse.user.nom,
+        userId: loginResponse.user.id,
+        userEmail: loginResponse.user.email,
+      );
+
+      // Succès - naviguer vers la sélection de client
       if (mounted) {
         Navigator.of(context).pushReplacementNamed('/client-selection');
       }
-    } else {
-      // Show error
+    } on AuthException catch (e) {
+      // Erreur d'authentification
       if (mounted) {
+        setState(() {
+          _errorMessage = e.message;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Nom d\'utilisateur ou mot de passe incorrect'),
+            content: Text(e.message),
             backgroundColor: Theme.of(context).colorScheme.error,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
@@ -326,12 +314,29 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         );
       }
-    }
-
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
+    } catch (e) {
+      // Erreur inattendue
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Une erreur est survenue. Veuillez réessayer.';
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur: ${e.toString()}'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 }

@@ -3,7 +3,7 @@ import '../models/reservation.dart';
 import '../models/table.dart';
 import '../services/mock_api_service.dart';
 import '../components/table_tile_card.dart';
-import '../components/custom_drawer.dart';
+import '../widgets/session_drawer.dart';
 
 class AvailableTablesScreen extends StatefulWidget {
   final Reservation reservation;
@@ -35,7 +35,7 @@ class _AvailableTablesScreenState extends State<AvailableTablesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      drawer: const CustomDrawer(serverName: 'John Doe'),
+      drawer: const SessionDrawer(),
       appBar: AppBar(
         leading: Builder(
           builder: (context) => IconButton(

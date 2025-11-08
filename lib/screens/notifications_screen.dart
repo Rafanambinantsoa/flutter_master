@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../components/custom_drawer.dart';
+import '../widgets/session_drawer.dart';
 
 enum NotificationKind { order, system, info }
 
@@ -30,7 +30,6 @@ class NotificationsScreen extends StatefulWidget {
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
   int _notificationCount = 3; // unread count mock
-  String _serverName = 'John Doe';
   _NotifFilter _selected = _NotifFilter.all;
 
   late List<AppNotification> _all;
@@ -72,7 +71,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Widget build(BuildContext context) {
     final filtered = _filterList(_all, _selected);
     return Scaffold(
-      drawer: CustomDrawer(serverName: _serverName),
+      drawer: const SessionDrawer(),
       appBar: AppBar(
         leading: Builder(
           builder: (context) => IconButton(

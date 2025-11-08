@@ -3,7 +3,7 @@ import '../models/reservation.dart';
 import '../models/table.dart';
 import '../services/mock_api_service.dart';
 import '../components/suggested_table_card.dart';
-import '../components/custom_drawer.dart';
+import '../widgets/session_drawer.dart';
 
 class ReservationDetailScreen extends StatefulWidget {
   final Reservation reservation;
@@ -126,7 +126,7 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
     final reservation = widget.reservation;
 
     return Scaffold(
-      drawer: const CustomDrawer(serverName: 'John Doe'),
+      drawer: const SessionDrawer(),
       appBar: AppBar(
         leading: Builder(
           builder: (context) => IconButton(

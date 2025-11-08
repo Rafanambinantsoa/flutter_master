@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../components/custom_drawer.dart';
+import '../widgets/session_drawer.dart';
 
 enum CommandeStatus { pending, served, cancelled }
 
@@ -26,7 +26,6 @@ class CommandesScreen extends StatefulWidget {
 
 class _CommandesScreenState extends State<CommandesScreen> {
   int _notificationCount = 3; // mock
-  String _serverName = 'John Doe';
   _Filter _selected = _Filter.all;
 
   late final List<CommandeModel> _allOrders;
@@ -87,7 +86,7 @@ class _CommandesScreenState extends State<CommandesScreen> {
         .fold<int>(0, (sum, o) => sum + o.total.toInt());
 
     return Scaffold(
-      drawer: CustomDrawer(serverName: _serverName),
+      drawer: const SessionDrawer(),
       appBar: AppBar(
         leading: Builder(
           builder: (context) => IconButton(
