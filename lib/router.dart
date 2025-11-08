@@ -33,7 +33,6 @@ Route<dynamic> appRouter(
   MockRepository repo,
   MockApiService apiService,
 ) {
-
   switch (settings.name) {
     case '/splash':
       return MaterialPageRoute(builder: (_) => const SplashScreen());
@@ -42,20 +41,12 @@ Route<dynamic> appRouter(
     case '/':
     case '/accueil':
       return MaterialPageRoute(
-        builder: (_) => _ProtectedRoute(
-          child: AccueilScreen(
-            repo: repo,
-            apiService: apiService,
-          ),
-        ),
+        builder: (_) => _ProtectedRoute(child: AccueilScreen(repo: repo)),
       );
     case '/client-selection':
       return MaterialPageRoute(
         builder: (_) => _ProtectedRoute(
-          child: ClientSelectionScreen(
-            repo: repo,
-            apiService: apiService,
-          ),
+          child: ClientSelectionScreen(repo: repo, apiService: apiService),
         ),
       );
     case '/reservation-lookup':
@@ -118,15 +109,11 @@ Route<dynamic> appRouter(
       );
     case '/orders':
       return MaterialPageRoute(
-        builder: (_) => _ProtectedRoute(
-          child: const CommandesScreen(),
-        ),
+        builder: (_) => _ProtectedRoute(child: const CommandesScreen()),
       );
     case '/notifications':
       return MaterialPageRoute(
-        builder: (_) => _ProtectedRoute(
-          child: const NotificationsScreen(),
-        ),
+        builder: (_) => _ProtectedRoute(child: const NotificationsScreen()),
       );
     default:
       // dynamic order details: /orders/{id}

@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
 import '../data/mock_repository.dart';
 import '../models/table.dart';
-import '../services/mock_api_service.dart';
+import '../services/tables_service.dart';
 import '../components/suggested_table_card.dart';
 import '../components/table_tile_card.dart';
 import '../widgets/session_drawer.dart';
 
 class AccueilScreen extends StatefulWidget {
   final MockRepository repo;
-  final MockApiService? apiService;
 
-  const AccueilScreen({super.key, required this.repo, this.apiService});
+  const AccueilScreen({super.key, required this.repo});
 
   @override
   State<AccueilScreen> createState() => _AccueilScreenState();
@@ -23,13 +22,13 @@ class _AccueilScreenState extends State<AccueilScreen> {
   bool _isLoading = false;
   List<DiningTable> _availableTables = [];
   int _notificationCount = 3;
+  String? _plageHoraire; // Pour afficher la plage horaire utilisée
 
-  late final MockApiService _apiService;
+  final TablesService _tablesService = TablesService();
 
   @override
   void initState() {
     super.initState();
-    _apiService = widget.apiService ?? MockApiService();
     _loadAvailableTables();
   }
 
@@ -45,21 +44,24 @@ class _AccueilScreenState extends State<AccueilScreen> {
     });
 
     try {
-      final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
-      final heureDebut = DateTime(today.year, today.month, today.day, now.hour);
-      final heureFin = heureDebut.add(const Duration(hours: 2));
-
-      final tables = await _apiService.findTablesDisponibles(
-        date: today,
-        heureDebut: heureDebut,
-        heureFin: heureFin,
-      );
+      // Utiliser le service API pour récupérer les tables disponibles
+      // Le service gère automatiquement l'arrondi aux tranches de 30 minutes
+      // et calcule l'heure de fin (heure actuelle + 2h30)
+      final response = await _tablesService.getTablesDisponibles();
 
       if (!mounted) return;
 
+      // Convertir les tables disponibles en DiningTable
+      final tables = response.disponibles
+          .map((table) => _tablesService.convertToDiningTable(table))
+          .toList();
+
+      // Sauvegarder la plage horaire pour l'affichage
+      final plageHoraire = '${response.heureDebut} - ${response.heureFin}';
+
       setState(() {
         _availableTables = tables;
+        _plageHoraire = plageHoraire;
         _isLoading = false;
       });
     } catch (e) {
@@ -67,10 +69,20 @@ class _AccueilScreenState extends State<AccueilScreen> {
       setState(() {
         _isLoading = false;
       });
+
+      String errorMessage = 'Erreur lors du chargement des tables';
+      if (e is TablesServiceException) {
+        errorMessage = e.message;
+      } else {
+        errorMessage = 'Erreur: ${e.toString()}';
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Erreur lors du chargement des tables: $e'),
+          content: Text(errorMessage),
           backgroundColor: Theme.of(context).colorScheme.error,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 4),
         ),
       );
     }
@@ -239,11 +251,23 @@ class _AccueilScreenState extends State<AccueilScreen> {
               ),
             if (_suggested != null) const SizedBox(height: 16),
             // Liste des tables disponibles
-            Text(
-              'Toutes les tables',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Toutes les tables',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (_plageHoraire != null)
+                  Text(
+                    _plageHoraire!,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+              ],
             ),
             const SizedBox(height: 12),
             Expanded(
@@ -289,26 +313,14 @@ class _AccueilScreenState extends State<AccueilScreen> {
                       crossAxisSpacing: 12,
                       mainAxisSpacing: 12,
                       childAspectRatio: 1.35,
-                      children: _apiService.getAllTables().map((t) {
-                        final isAvailable = _availableTables.any(
-                          (available) => available.id == t.id,
-                        );
+                      children: _availableTables.map((t) {
                         return TableTileCard(
                           table: t,
-                          isAvailable: isAvailable,
-                          onTap: isAvailable
-                              ? () => Navigator.of(
-                                  context,
-                                ).pushNamed('/order', arguments: t)
-                              : () {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Cette table n\'est pas disponible',
-                                      ),
-                                    ),
-                                  );
-                                },
+                          isAvailable:
+                              true, // Toutes les tables affichées sont disponibles
+                          onTap: () => Navigator.of(
+                            context,
+                          ).pushNamed('/order', arguments: t),
                         );
                       }).toList(),
                     ),
