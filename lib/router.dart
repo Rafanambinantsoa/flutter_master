@@ -15,6 +15,8 @@ import 'screens/client_selection_screen.dart';
 import 'screens/reservation_lookup_screen.dart';
 import 'screens/reservation_detail_screen.dart';
 import 'screens/available_tables_screen.dart';
+import 'screens/client_info_screen.dart';
+import 'models/client_info.dart';
 
 /// Widget helper pour protéger les routes
 class _ProtectedRoute extends StatelessWidget {
@@ -81,19 +83,31 @@ Route<dynamic> appRouter(
           ),
         ),
       );
+    case '/client-info':
+      final args = (settings.arguments as Map<String, dynamic>?) ?? {};
+      return MaterialPageRoute(
+        builder: (_) => _ProtectedRoute(
+          child: ClientInfoScreen(
+            table: args['table'] as DiningTable,
+          ),
+        ),
+      );
     case '/order':
       final args = settings.arguments;
       DiningTable table;
       Reservation? reservation;
+      ClientInfo? clientInfo;
 
       if (args is DiningTable) {
         // Ancien format pour compatibilité
         table = args;
         reservation = null;
+        clientInfo = null;
       } else if (args is Map<String, dynamic>) {
-        // Nouveau format avec réservation optionnelle
+        // Nouveau format avec réservation et infos client optionnelles
         table = args['table'] as DiningTable;
         reservation = args['reservation'] as Reservation?;
+        clientInfo = args['clientInfo'] as ClientInfo?;
       } else {
         throw ArgumentError('Invalid arguments for /order route');
       }
@@ -104,6 +118,7 @@ Route<dynamic> appRouter(
             repo: repo,
             table: table,
             reservation: reservation,
+            clientInfo: clientInfo,
           ),
         ),
       );

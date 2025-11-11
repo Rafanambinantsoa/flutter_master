@@ -4,6 +4,7 @@ import '../models/menu_item.dart';
 import '../models/order.dart';
 import '../models/table.dart';
 import '../models/reservation.dart';
+import '../models/client_info.dart';
 
 class CartModel extends ChangeNotifier {
   final MockRepository repo;
@@ -11,14 +12,10 @@ class CartModel extends ChangeNotifier {
   late final String orderId;
   final List<OrderLine>? prepaidItems;
 
-  CartModel({
-    required this.repo,
-    required this.tableId,
-    this.prepaidItems,
-  }) {
+  CartModel({required this.repo, required this.tableId, this.prepaidItems}) {
     final order = repo.createOrder(tableId);
     orderId = order.id;
-    
+
     // Si des items prépayés sont fournis, les ajouter à la commande
     if (prepaidItems != null) {
       for (final line in prepaidItems!) {
@@ -70,12 +67,14 @@ class OrderScreen extends StatefulWidget {
   final MockRepository repo;
   final DiningTable table;
   final Reservation? reservation; // Réservation optionnelle (pour menu prépayé)
+  final ClientInfo? clientInfo; // Informations client (pour clients sans réservation)
 
   const OrderScreen({
     super.key,
     required this.repo,
     required this.table,
     this.reservation,
+    this.clientInfo,
   });
 
   @override
@@ -100,7 +99,8 @@ class _OrderScreenState extends State<OrderScreen> {
   @override
   Widget build(BuildContext context) {
     final isPrepaid = widget.reservation?.type == ReservationType.prepaidMenu;
-    
+    final hasClientInfo = widget.clientInfo != null;
+
     return Scaffold(
       appBar: AppBar(
         title: Column(
@@ -111,6 +111,15 @@ class _OrderScreenState extends State<OrderScreen> {
             if (isPrepaid)
               Text(
                 'Menu prépayé',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.normal,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            if (hasClientInfo && !isPrepaid)
+              Text(
+                widget.clientInfo!.nom,
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.normal,
@@ -134,8 +143,8 @@ class _OrderScreenState extends State<OrderScreen> {
                             CartScreen(repo: widget.repo, cart: _cart),
                       ),
                     );
-                          setState(() {});
-                        },
+                    setState(() {});
+                  },
                 ),
                 if (_cart.itemCount > 0)
                   Positioned(
@@ -156,10 +165,10 @@ class _OrderScreenState extends State<OrderScreen> {
                           color: Colors.white,
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ),
-                ),
               ],
             ),
           ),
@@ -187,18 +196,68 @@ class _OrderScreenState extends State<OrderScreen> {
                           'Menu prépayé',
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onPrimaryContainer,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onPrimaryContainer,
                           ),
                         ),
                         Text(
                           'Vous pouvez ajouter des extras si nécessaire',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onPrimaryContainer,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onPrimaryContainer,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          if (hasClientInfo && !isPrepaid)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              color: Theme.of(context).colorScheme.secondaryContainer,
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.person,
+                    color: Theme.of(context).colorScheme.onSecondaryContainer,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.clientInfo!.nom,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSecondaryContainer,
+                          ),
+                        ),
+                        if (widget.clientInfo!.telephone != null)
+                          Text(
+                            widget.clientInfo!.telephone!,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSecondaryContainer.withOpacity(0.7),
+                            ),
+                          ),
+                        Text(
+                          widget.clientInfo!.email,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSecondaryContainer.withOpacity(0.7),
                           ),
                         ),
                       ],
@@ -487,7 +546,7 @@ class CartScreen extends StatelessWidget {
           appBar: AppBar(title: Text('Panier - Table $tableNumber')),
           body: Column(
             children: [
-                Expanded(
+              Expanded(
                 child: order.lines.isEmpty
                     ? Center(
                         child: Column(
@@ -510,7 +569,7 @@ class CartScreen extends StatelessWidget {
                         ),
                       )
                     : ListView.separated(
-                    padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(12),
                         itemCount: order.lines.length,
                         separatorBuilder: (_, __) => const SizedBox(height: 8),
                         itemBuilder: (context, index) {
@@ -544,22 +603,22 @@ class CartScreen extends StatelessWidget {
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
+                  children: [
+                    Text(
                       'Total: ${cart.total.toStringAsFixed(2)} €',
                       textAlign: TextAlign.right,
                       style: const TextStyle(fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 12),
-                        FilledButton(
+                    FilledButton(
                       onPressed: () => repo.submitToKitchen(cart.orderId),
                       child: const Text('Valider la commande'),
-                        ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
+          ),
         );
       },
     );

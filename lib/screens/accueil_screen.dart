@@ -244,9 +244,10 @@ class _AccueilScreenState extends State<AccueilScreen> {
                   (t) => t.id == _suggested!.id,
                 ),
                 onSelect: () {
-                  Navigator.of(
-                    context,
-                  ).pushNamed('/order', arguments: _suggested);
+                  Navigator.of(context).pushNamed(
+                    '/client-info',
+                    arguments: {'table': _suggested!},
+                  );
                 },
               ),
             if (_suggested != null) const SizedBox(height: 16),
@@ -318,9 +319,10 @@ class _AccueilScreenState extends State<AccueilScreen> {
                           table: t,
                           isAvailable:
                               true, // Toutes les tables affichées sont disponibles
-                          onTap: () => Navigator.of(
-                            context,
-                          ).pushNamed('/order', arguments: t),
+                          onTap: () => Navigator.of(context).pushNamed(
+                            '/client-info',
+                            arguments: {'table': t},
+                          ),
                         );
                       }).toList(),
                     ),
