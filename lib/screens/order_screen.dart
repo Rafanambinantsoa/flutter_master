@@ -5,6 +5,7 @@ import '../models/order.dart';
 import '../models/table.dart';
 import '../models/reservation.dart';
 import '../models/client_info.dart';
+import '../services/menu_service.dart';
 
 class CartModel extends ChangeNotifier {
   final MockRepository repo;
@@ -67,7 +68,8 @@ class OrderScreen extends StatefulWidget {
   final MockRepository repo;
   final DiningTable table;
   final Reservation? reservation; // Réservation optionnelle (pour menu prépayé)
-  final ClientInfo? clientInfo; // Informations client (pour clients sans réservation)
+  final ClientInfo?
+  clientInfo; // Informations client (pour clients sans réservation)
 
   const OrderScreen({
     super.key,
@@ -85,6 +87,10 @@ class _OrderScreenState extends State<OrderScreen> {
   MenuCategory? _categoryFilter;
   MenuTemperature? _tempFilter;
   late CartModel _cart;
+  final MenuService _menuService = MenuService();
+  List<MenuItemModel> _menuItems = const [];
+  bool _isLoadingMenu = false;
+  String? _menuError;
 
   @override
   void initState() {
@@ -94,6 +100,28 @@ class _OrderScreenState extends State<OrderScreen> {
       tableId: widget.table.id,
       prepaidItems: widget.reservation?.prepaidMenuItems,
     );
+    _loadMenu();
+  }
+
+  Future<void> _loadMenu() async {
+    setState(() {
+      _isLoadingMenu = true;
+      _menuError = null;
+    });
+    try {
+      final items = await _menuService.getMenus();
+      if (!mounted) return;
+      setState(() {
+        _menuItems = items;
+        _isLoadingMenu = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _menuError = e.toString();
+        _isLoadingMenu = false;
+      });
+    }
   }
 
   @override
@@ -246,9 +274,10 @@ class _OrderScreenState extends State<OrderScreen> {
                             widget.clientInfo!.telephone!,
                             style: TextStyle(
                               fontSize: 12,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSecondaryContainer.withOpacity(0.7),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSecondaryContainer
+                                  .withOpacity(0.7),
                             ),
                           ),
                         Text(
@@ -278,6 +307,81 @@ class _OrderScreenState extends State<OrderScreen> {
               builder: (context, constraints) {
                 final crossAxisCount = constraints.maxWidth < 700 ? 2 : 3;
                 final childAspect = crossAxisCount == 2 ? 0.7 : 0.65;
+                if (_isLoadingMenu) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (_menuError != null) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.error_outline,
+                            size: 48,
+                            color: Colors.redAccent,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Erreur lors du chargement du menu',
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            _menuError!,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          OutlinedButton.icon(
+                            onPressed: _loadMenu,
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Réessayer'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+                final filtered = _menuItems
+                    .where(
+                      (m) =>
+                          _categoryFilter == null ||
+                          m.category == _categoryFilter,
+                    )
+                    .where(
+                      (m) =>
+                          _tempFilter == null || m.temperature == _tempFilter,
+                    )
+                    .toList();
+                if (filtered.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.restaurant_outlined,
+                          size: 56,
+                          color: Colors.grey,
+                        ),
+                        const SizedBox(height: 8),
+                        const Text('Aucun élément de menu'),
+                        const SizedBox(height: 8),
+                        OutlinedButton.icon(
+                          onPressed: _loadMenu,
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Recharger'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
                 return GridView.builder(
                   padding: const EdgeInsets.all(12),
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -286,31 +390,9 @@ class _OrderScreenState extends State<OrderScreen> {
                     mainAxisSpacing: 12,
                     childAspectRatio: childAspect,
                   ),
-                  itemCount: widget.repo.menu
-                      .where(
-                        (m) =>
-                            _categoryFilter == null ||
-                            m.category == _categoryFilter,
-                      )
-                      .where(
-                        (m) =>
-                            _tempFilter == null || m.temperature == _tempFilter,
-                      )
-                      .length,
+                  itemCount: filtered.length,
                   itemBuilder: (context, index) {
-                    final items = widget.repo.menu
-                        .where(
-                          (m) =>
-                              _categoryFilter == null ||
-                              m.category == _categoryFilter,
-                        )
-                        .where(
-                          (m) =>
-                              _tempFilter == null ||
-                              m.temperature == _tempFilter,
-                        )
-                        .toList();
-                    final item = items[index];
+                    final item = filtered[index];
                     return _MenuCard(item: item, cart: _cart);
                   },
                 );
