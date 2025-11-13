@@ -6,6 +6,8 @@ import '../models/table.dart';
 import '../models/reservation.dart';
 import '../models/client_info.dart';
 import '../services/menu_service.dart';
+import '../services/commande_service.dart';
+import '../models/commande.dart';
 
 class CartModel extends ChangeNotifier {
   final MockRepository repo;
@@ -167,8 +169,13 @@ class _OrderScreenState extends State<OrderScreen> {
                   onPressed: () async {
                     await Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) =>
-                            CartScreen(repo: widget.repo, cart: _cart),
+                        builder: (_) => CartScreen(
+                          repo: widget.repo,
+                          cart: _cart,
+                          table: widget.table,
+                          reservation: widget.reservation,
+                          clientInfo: widget.clientInfo,
+                        ),
                       ),
                     );
                     setState(() {});
@@ -628,20 +635,187 @@ class _MenuCard extends StatelessWidget {
   }
 }
 
-class CartScreen extends StatelessWidget {
+class CartScreen extends StatefulWidget {
   final MockRepository repo;
   final CartModel cart;
-  const CartScreen({super.key, required this.repo, required this.cart});
+  final DiningTable table;
+  final Reservation? reservation;
+  final ClientInfo? clientInfo;
+
+  const CartScreen({
+    super.key,
+    required this.repo,
+    required this.cart,
+    required this.table,
+    this.reservation,
+    this.clientInfo,
+  });
+
+  @override
+  State<CartScreen> createState() => _CartScreenState();
+}
+
+class _CartScreenState extends State<CartScreen> {
+  final CommandeService _commandeService = CommandeService();
+  bool _isSubmitting = false;
+
+  Future<void> _submitCommande() async {
+    if (_isSubmitting) return;
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      final order = widget.cart.order;
+
+      // Extraire les IDs des menus et les quantités
+      final menuIds = <int>[];
+      final quantities = <int>[];
+
+      for (final line in order.lines) {
+        final menuId = int.tryParse(line.item.id);
+        if (menuId != null) {
+          menuIds.add(menuId);
+          quantities.add(line.quantity);
+        }
+      }
+
+      if (menuIds.isEmpty) {
+        throw Exception('Aucun menu dans la commande');
+      }
+
+      // Extraire l'ID de la table (supprimer le préfixe 't' si présent)
+      final tableIdStr = widget.table.id.replaceAll('t', '');
+      final tableId = int.tryParse(tableIdStr) ?? widget.table.number;
+      final tablesIds = [tableId];
+
+      // Gérer la date et l'heure pour la réservation
+      final now = DateTime.now();
+      final dateCommande = now;
+
+      // Pour les clients sans réservation, utiliser maintenant + 2h30
+      // Pour les réservations existantes, utiliser les données de la réservation
+      String dateReservation;
+      String heureDebut;
+      String heureFin;
+
+      if (widget.reservation != null) {
+        // Utiliser les données de la réservation existante
+        dateReservation =
+            '${widget.reservation!.date.year}-${widget.reservation!.date.month.toString().padLeft(2, '0')}-${widget.reservation!.date.day.toString().padLeft(2, '0')}';
+        heureDebut =
+            '${widget.reservation!.heureDebut.hour.toString().padLeft(2, '0')}:${widget.reservation!.heureDebut.minute.toString().padLeft(2, '0')}';
+        heureFin =
+            '${widget.reservation!.heureFin.hour.toString().padLeft(2, '0')}:${widget.reservation!.heureFin.minute.toString().padLeft(2, '0')}';
+      } else {
+        // Pour les clients sans réservation, créer une réservation pour maintenant
+        dateReservation =
+            '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+        heureDebut =
+            '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+        final finTime = now.add(const Duration(hours: 2, minutes: 30));
+        heureFin =
+            '${finTime.hour.toString().padLeft(2, '0')}:${finTime.minute.toString().padLeft(2, '0')}';
+      }
+
+      // Gérer les informations client
+      String nom;
+      String email;
+      String? telephone;
+      String? adresse;
+
+      if (widget.reservation != null) {
+        // Utiliser les données de la réservation
+        nom = widget.reservation!.clientName ?? 'Client';
+        email =
+            'client@example.com'; // L'API de réservation n'a peut-être pas d'email
+        telephone = widget.reservation!.clientPhone;
+        adresse = null;
+      } else if (widget.clientInfo != null) {
+        // Utiliser les données du client info
+        nom = widget.clientInfo!.nom;
+        email = widget.clientInfo!.email;
+        telephone = widget.clientInfo!.telephone;
+        adresse = widget.clientInfo!.adresse;
+      } else {
+        throw Exception('Informations client manquantes');
+      }
+
+      // Récupérer le reservation_id (0 ou null si pas de réservation existante)
+      final reservationId = widget.reservation != null
+          ? int.tryParse(widget.reservation!.id) ?? 0
+          : 0;
+
+      // Créer la requête
+      final request = CreateCommandeRequest(
+        reservationId: reservationId,
+        dateCommande: dateCommande,
+        nom: nom,
+        email: email,
+        telephone: telephone,
+        adresse: adresse,
+        dateReservation: dateReservation,
+        heureDebut: heureDebut,
+        heureFin: heureFin,
+        tablesIds: tablesIds,
+        menuIds: menuIds,
+        quantities: quantities,
+      );
+
+      // Appeler l'API
+      final response = await _commandeService.createCommande(request);
+
+      if (!mounted) return;
+
+      // Succès
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(response.message),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+
+      // Soumettre au kitchen (local)
+      widget.repo.submitToKitchen(widget.cart.orderId);
+
+      // Retourner à l'écran précédent après un court délai
+      await Future.delayed(const Duration(milliseconds: 500));
+      if (!mounted) return;
+      Navigator.of(
+        context,
+      ).pop(true); // true indique que la commande a été créée
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _isSubmitting = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Erreur lors de la création de la commande: ${e.toString()}',
+          ),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final tableNumber = repo.tables
-        .firstWhere((t) => t.id == cart.tableId)
+    final tableNumber = widget.repo.tables
+        .firstWhere((t) => t.id == widget.cart.tableId)
         .number;
     return AnimatedBuilder(
-      animation: cart,
+      animation: widget.cart,
       builder: (context, _) {
-        final order = cart.order;
+        final order = widget.cart.order;
         return Scaffold(
           appBar: AppBar(title: Text('Panier - Table $tableNumber')),
           body: Column(
@@ -707,7 +881,7 @@ class CartScreen extends StatelessWidget {
                                 children: [
                                   IconButton(
                                     icon: const Icon(Icons.remove),
-                                    onPressed: () => cart.dec(line.item),
+                                    onPressed: () => widget.cart.dec(line.item),
                                   ),
                                   Container(
                                     padding: const EdgeInsets.symmetric(
@@ -732,7 +906,7 @@ class CartScreen extends StatelessWidget {
                                   ),
                                   IconButton(
                                     icon: const Icon(Icons.add),
-                                    onPressed: () => cart.inc(line.item),
+                                    onPressed: () => widget.cart.inc(line.item),
                                   ),
                                 ],
                               ),
@@ -770,7 +944,7 @@ class CartScreen extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            '${cart.itemCount}',
+                            '${widget.cart.itemCount}',
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
@@ -791,7 +965,7 @@ class CartScreen extends StatelessWidget {
                                 ?.copyWith(fontWeight: FontWeight.w700),
                           ),
                           Text(
-                            '${cart.total.toStringAsFixed(0)} Ar',
+                            '${widget.cart.total.toStringAsFixed(0)} Ar',
                             style: Theme.of(context).textTheme.titleLarge
                                 ?.copyWith(
                                   fontWeight: FontWeight.w700,
@@ -802,17 +976,28 @@ class CartScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 16),
                       FilledButton(
-                        onPressed: () => repo.submitToKitchen(cart.orderId),
+                        onPressed: _isSubmitting ? null : _submitCommande,
                         style: FilledButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
-                        child: const Text(
-                          'Valider la commande',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                        child: _isSubmitting
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.white,
+                                  ),
+                                ),
+                              )
+                            : const Text(
+                                'Valider la commande',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                       ),
                     ],
                   ),
