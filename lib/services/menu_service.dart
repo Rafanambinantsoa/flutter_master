@@ -71,10 +71,16 @@ class MenuService {
       _ => MenuCategory.dish,
     };
 
-    // Prix: l'API fournie n'a pas de prix -> défaut 0.0
-    final price = (json['price'] is num)
-        ? (json['price'] as num).toDouble()
-        : 0.0;
+    // Prix: lire le champ 'prix' de l'API (peut être un num ou une string)
+    double price = 0.0;
+    final prixValue = json['prix'];
+    if (prixValue != null) {
+      if (prixValue is num) {
+        price = prixValue.toDouble();
+      } else if (prixValue is String) {
+        price = double.tryParse(prixValue) ?? 0.0;
+      }
+    }
 
     // Image: privilégier imageUrl si complet, sinon construire depuis image
     final imageUrl = _resolveImageUrl(
