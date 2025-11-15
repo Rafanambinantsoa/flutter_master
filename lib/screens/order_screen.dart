@@ -546,12 +546,12 @@ class _MenuCard extends StatelessWidget {
                         children: [
                           Expanded(
                             child: Text(
-                              item.name,
+                        item.name,
                               style: const TextStyle(
                                 fontWeight: FontWeight.w700,
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           Text(
@@ -944,9 +944,9 @@ class _CartScreenState extends State<CartScreen> {
                   ],
                 ),
                 child: SafeArea(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -980,7 +980,7 @@ class _CartScreenState extends State<CartScreen> {
                             style: Theme.of(context).textTheme.titleLarge
                                 ?.copyWith(fontWeight: FontWeight.w700),
                           ),
-                          Text(
+                    Text(
                             '${widget.cart.total.toStringAsFixed(0)} Ar',
                             style: Theme.of(context).textTheme.titleLarge
                                 ?.copyWith(
@@ -991,7 +991,7 @@ class _CartScreenState extends State<CartScreen> {
                         ],
                       ),
                       const SizedBox(height: 16),
-                      FilledButton(
+                    FilledButton(
                         onPressed: _isSubmitting ? null : _submitCommande,
                         style: FilledButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),

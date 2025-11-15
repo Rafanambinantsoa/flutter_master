@@ -110,6 +110,53 @@ class CommandeService {
       );
     }
   }
+
+  /// Annule une commande
+  Future<void> cancelCommande(String commandeId) async {
+    final token = await _sessionService.getAccessToken();
+    if (token == null) {
+      throw CommandeServiceException(
+        message: 'Token d\'authentification manquant',
+        statusCode: 401,
+      );
+    }
+
+    final url = Uri.parse('${ApiConfig.baseUrl}/commande/$commandeId');
+    try {
+      final response = await http
+          .delete(url, headers: {'Authorization': 'Bearer $token'})
+          .timeout(Duration(seconds: ApiConfig.requestTimeout));
+
+      if (response.statusCode != 200 && response.statusCode != 204) {
+        final responseData = response.body.isNotEmpty
+            ? jsonDecode(response.body) as Map<String, dynamic>
+            : <String, dynamic>{};
+        final message =
+            responseData['message'] as String? ??
+            'Erreur lors de l\'annulation de la commande';
+        throw CommandeServiceException(
+          message: message,
+          statusCode: response.statusCode,
+        );
+      }
+    } on http.ClientException catch (e) {
+      throw CommandeServiceException(
+        message: 'Erreur de connexion: ${e.message}',
+        statusCode: 0,
+      );
+    } on FormatException {
+      throw CommandeServiceException(
+        message: 'Réponse invalide du serveur',
+        statusCode: 0,
+      );
+    } catch (e) {
+      if (e is CommandeServiceException) rethrow;
+      throw CommandeServiceException(
+        message: 'Une erreur inattendue est survenue: ${e.toString()}',
+        statusCode: 0,
+      );
+    }
+  }
 }
 
 /// Exception personnalisée pour les erreurs du service de commandes

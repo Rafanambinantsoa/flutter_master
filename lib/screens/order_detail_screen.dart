@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../widgets/session_drawer.dart';
 import 'menu_selection_screen.dart';
+import '../services/commande_service.dart';
 
 class OrderDetailScreen extends StatefulWidget {
   final String id;
@@ -28,6 +29,8 @@ class OrderDetailScreen extends StatefulWidget {
 
 class _OrderDetailScreenState extends State<OrderDetailScreen> {
   List<Map<String, dynamic>>? _currentLines;
+  final CommandeService _commandeService = CommandeService();
+  bool _isCancelling = false;
 
   @override
   void initState() {
@@ -140,6 +143,77 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     });
   }
 
+  Future<void> _cancelCommande() async {
+    // Demander confirmation avant d'annuler
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Annuler la commande'),
+        content: const Text(
+          'Êtes-vous sûr de vouloir annuler cette commande ? Cette action est irréversible.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Non'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: const Text('Oui, annuler'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    setState(() {
+      _isCancelling = true;
+    });
+
+    try {
+      await _commandeService.cancelCommande(widget.id);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Commande annulée avec succès'),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          duration: Duration(seconds: 2),
+        ),
+      );
+
+      // Retourner à l'écran précédent ou à l'accueil
+      Navigator.of(context).pop();
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            e is CommandeServiceException
+                ? e.message
+                : 'Erreur lors de l\'annulation: ${e.toString()}',
+          ),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isCancelling = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -229,7 +303,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                             '${(price * qty).toStringAsFixed(0)} Ar',
                             style: const TextStyle(fontWeight: FontWeight.w700),
                           ),
-                          if (_hasUnsavedChanges) ...[
+                          // Afficher le bouton de retrait uniquement si le statut est "en_attente"
+                          if (status != null &&
+                              (status.toLowerCase() == 'en_attente' ||
+                                  status.toLowerCase() == 'en attente')) ...[
                             const SizedBox(width: 8),
                             IconButton(
                               icon: Icon(
@@ -285,17 +362,42 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                         ),
                       ],
                     ),
-                    if (_hasUnsavedChanges) ...[
-                      const SizedBox(height: 12),
-                      FilledButton.icon(
-                        onPressed: _saveChanges,
-                        icon: const Icon(Icons.save),
-                        label: const Text('Sauvegarder les modifications'),
-                        style: FilledButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _isCancelling ? null : _cancelCommande,
+                            icon: _isCancelling
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Icon(Icons.cancel_outlined),
+                            label: const Text('Annuler'),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              foregroundColor: cs.error,
+                              side: BorderSide(color: cs.error),
+                            ),
+                          ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: FilledButton.icon(
+                            onPressed: _hasUnsavedChanges ? _saveChanges : null,
+                            icon: const Icon(Icons.save),
+                            label: const Text('Sauvegarder'),
+                            style: FilledButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
