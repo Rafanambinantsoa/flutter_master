@@ -1,0 +1,8 @@
+FLux commande : 
+Une fois qu'il est creer bah  son statut sera en attente 
+Apres la mise a  jour du commande    elle sera en en cours  
+
+UN fois que tout les menus commander  sont   pret 
+la commande devrait se transformer en servie 
+
+Caisse   ===  paye .... 

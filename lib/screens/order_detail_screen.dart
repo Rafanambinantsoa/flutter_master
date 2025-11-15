@@ -2,26 +2,12 @@ import 'package:flutter/material.dart';
 import '../widgets/session_drawer.dart';
 import 'menu_selection_screen.dart';
 import '../services/commande_service.dart';
+import '../models/commande.dart';
 
 class OrderDetailScreen extends StatefulWidget {
-  final String id;
-  final DateTime? createdAt;
-  final dynamic status; // matches CommandeStatus or similar
-  final double? total;
-  final List<Map<String, dynamic>>? lines;
-  final Map<String, dynamic>? clientInfo; // Informations du client
-  final int? tableNumber; // Numéro de table
+  final String commandeId; // Référence de la commande (ex: "COM-5")
 
-  const OrderDetailScreen({
-    super.key,
-    required this.id,
-    this.createdAt,
-    this.status,
-    this.total,
-    this.lines,
-    this.clientInfo,
-    this.tableNumber,
-  });
+  const OrderDetailScreen({super.key, required this.commandeId});
 
   @override
   State<OrderDetailScreen> createState() => _OrderDetailScreenState();
@@ -31,28 +17,78 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   List<Map<String, dynamic>>? _currentLines;
   final CommandeService _commandeService = CommandeService();
   bool _isCancelling = false;
+  Commande? _commande;
+  bool _isLoading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _currentLines = widget.lines;
+    _loadCommandeDetails();
+  }
+
+  Future<void> _loadCommandeDetails() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      // Extraire l'ID numérique de la référence (ex: "COM-5" -> "5")
+      final idMatch = RegExp(r'(\d+)$').firstMatch(widget.commandeId);
+      final numericId = idMatch?.group(1) ?? widget.commandeId;
+
+      final commande = await _commandeService.getCommandeById(numericId);
+      setState(() {
+        _commande = commande;
+        // Convertir les CommandeMenu en format Map pour _currentLines
+        _currentLines = commande.commandeMenu.map((cm) {
+          final prix = double.tryParse(cm.menu.prix) ?? 0.0;
+          return {
+            'name': cm.menu.nom,
+            'qty': cm.quantity,
+            'price': prix,
+            'status': cm.status,
+            'menuId': cm.menuId, // Garder l'ID du menu pour la mise à jour
+          };
+        }).toList();
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = e is CommandeServiceException
+            ? e.message
+            : 'Erreur lors du chargement de la commande';
+        _isLoading = false;
+      });
+    }
   }
 
   bool get _hasUnsavedChanges {
-    if (_currentLines == null && widget.lines == null) return false;
-    if (_currentLines == null || widget.lines == null) return true;
-    if (_currentLines!.length != widget.lines!.length) return true;
+    if (_commande == null || _currentLines == null) return false;
+
+    // Comparer les lignes actuelles avec les lignes originales de la commande
+    if (_currentLines!.length != _commande!.commandeMenu.length) return true;
+
+    // Créer une map des lignes originales pour faciliter la comparaison
+    final originalLinesMap = <String, Map<String, dynamic>>{};
+    for (final cm in _commande!.commandeMenu) {
+      originalLinesMap[cm.menu.nom] = {
+        'qty': cm.quantity,
+        'price': double.tryParse(cm.menu.prix) ?? 0.0,
+        'status': cm.status,
+      };
+    }
 
     // Comparer les lignes
-    for (int i = 0; i < _currentLines!.length; i++) {
-      final current = _currentLines![i];
-      final original = widget.lines!.firstWhere(
-        (l) => l['name'] == current['name'],
-        orElse: () => {},
-      );
-      if (original.isEmpty ||
-          (current['qty'] as int? ?? 0) != (original['qty'] as int? ?? 0)) {
-        return true;
+    for (final current in _currentLines!) {
+      final name = current['name'] as String?;
+      if (name == null || !originalLinesMap.containsKey(name)) {
+        return true; // Nouvelle ligne ajoutée
+      }
+      final original = originalLinesMap[name]!;
+      if ((current['qty'] as int? ?? 0) != (original['qty'] as int? ?? 0)) {
+        return true; // Quantité modifiée
       }
     }
     return false;
@@ -62,7 +98,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     final result = await Navigator.of(context).push<List<MenuSelection>>(
       MaterialPageRoute(
         builder: (_) => MenuSelectionScreen(
-          commandeId: widget.id,
+          commandeId: widget.commandeId,
           existingItems: _currentLines,
         ),
       ),
@@ -96,6 +132,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               'qty': selection.quantity,
               'price': selection.menu.price,
               'status': 'en_attente', // Nouvel item en attente par défaut
+              'menuId': int.tryParse(selection.menu.id), // Inclure l'ID du menu
             });
           }
         }
@@ -124,23 +161,109 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   Future<void> _saveChanges() async {
-    if (!_hasUnsavedChanges) return;
+    if (!_hasUnsavedChanges || _commande == null || _currentLines == null) {
+      return;
+    }
 
-    // TODO: Appeler l'API pour mettre à jour la commande avec les nouveaux articles
-    // Pour l'instant, on affiche juste un message de succès
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Modifications sauvegardées'),
-        backgroundColor: Colors.green,
-        behavior: SnackBarBehavior.floating,
-        duration: Duration(seconds: 2),
-      ),
-    );
+    // Extraire l'ID numérique de la référence
+    final idMatch = RegExp(r'(\d+)$').firstMatch(widget.commandeId);
+    final numericId = idMatch?.group(1) ?? widget.commandeId;
 
-    // Recharger les données ou mettre à jour l'état
-    setState(() {
-      // Les modifications sont sauvegardées, on pourrait recharger depuis l'API
-    });
+    // Construire une map pour trouver les IDs des menus par nom
+    final menuIdMap = <String, int>{};
+    for (final cm in _commande!.commandeMenu) {
+      menuIdMap[cm.menu.nom] = cm.menuId;
+    }
+
+    // Extraire les menuIds et quantities depuis _currentLines
+    final menuIds = <int>[];
+    final quantities = <int>[];
+
+    for (final line in _currentLines!) {
+      final name = line['name'] as String?;
+      final qty = (line['qty'] as int?) ?? 1;
+
+      // Chercher l'ID du menu
+      int? menuId;
+      if (line['menuId'] != null) {
+        // Si l'ID est déjà présent dans la ligne
+        menuId = (line['menuId'] as num?)?.toInt();
+      } else if (name != null && menuIdMap.containsKey(name)) {
+        // Sinon, chercher par nom
+        menuId = menuIdMap[name];
+      }
+
+      if (menuId != null) {
+        menuIds.add(menuId);
+        quantities.add(qty);
+      }
+    }
+
+    if (menuIds.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Aucun menu à mettre à jour'),
+          backgroundColor: Colors.orange,
+          behavior: SnackBarBehavior.floating,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    try {
+      final request = UpdateCommandeMenusRequest(
+        menuIds: menuIds,
+        quantities: quantities,
+      );
+
+      final response = await _commandeService.updateCommandeMenus(
+        numericId,
+        request,
+      );
+
+      if (!mounted) return;
+
+      // Mettre à jour l'état avec la réponse
+      setState(() {
+        _commande = response.commande;
+        // Convertir les CommandeMenu en format Map pour _currentLines
+        _currentLines = response.commande.commandeMenu.map((cm) {
+          final prix = double.tryParse(cm.menu.prix) ?? 0.0;
+          return {
+            'name': cm.menu.nom,
+            'qty': cm.quantity,
+            'price': prix,
+            'status': cm.status,
+            'menuId': cm.menuId,
+          };
+        }).toList();
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(response.message),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            e is CommandeServiceException
+                ? e.message
+                : 'Erreur lors de la sauvegarde: ${e.toString()}',
+          ),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
   }
 
   Future<void> _cancelCommande() async {
@@ -175,7 +298,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     });
 
     try {
-      await _commandeService.cancelCommande(widget.id);
+      // Extraire l'ID numérique de la référence
+      final idMatch = RegExp(r'(\d+)$').firstMatch(widget.commandeId);
+      final numericId = idMatch?.group(1) ?? widget.commandeId;
+      await _commandeService.cancelCommande(numericId);
 
       if (!mounted) return;
 
@@ -218,14 +344,86 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
-    // Calculer le total réel à partir des lignes (utiliser _currentLines si disponible)
-    final linesToUse = _currentLines ?? widget.lines;
+    if (_isLoading) {
+      return Scaffold(
+        drawer: const SessionDrawer(),
+        appBar: AppBar(
+          title: Text('Commande ${widget.commandeId}'),
+          centerTitle: true,
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_errorMessage != null) {
+      return Scaffold(
+        drawer: const SessionDrawer(),
+        appBar: AppBar(
+          title: Text('Commande ${widget.commandeId}'),
+          centerTitle: true,
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                _errorMessage!,
+                style: TextStyle(color: cs.error),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: _loadCommandeDetails,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Réessayer'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_commande == null || _currentLines == null) {
+      return Scaffold(
+        drawer: const SessionDrawer(),
+        appBar: AppBar(
+          title: Text('Commande ${widget.commandeId}'),
+          centerTitle: true,
+        ),
+        body: const Center(child: Text('Commande introuvable')),
+      );
+    }
+
+    // Calculer le total réel à partir des lignes
     double calculatedTotal = 0.0;
-    if (linesToUse != null) {
-      for (final line in linesToUse) {
-        final int qty = (line['qty'] as int?) ?? 1;
-        final double price = (line['price'] as num?)?.toDouble() ?? 0;
-        calculatedTotal += price * qty;
+    for (final line in _currentLines!) {
+      final int qty = (line['qty'] as int?) ?? 1;
+      final double price = (line['price'] as num?)?.toDouble() ?? 0;
+      calculatedTotal += price * qty;
+    }
+
+    // Extraire les informations client et table depuis la réservation
+    Map<String, dynamic>? clientInfo;
+    int? tableNumber;
+    if (_commande!.reservation != null) {
+      final reservation = _commande!.reservation!;
+      if (reservation.client != null) {
+        clientInfo = {
+          'nom': reservation.client!.nom,
+          'email': reservation.client!.email,
+          'telephone': reservation.client!.telephone,
+          'adresse': reservation.client!.adresse,
+        };
+      }
+      // Extraire le numéro de table depuis reservationTables
+      if (reservation.reservationTables.isNotEmpty) {
+        final tableData = reservation.reservationTables.first['table'];
+        if (tableData != null && tableData['numero_table'] != null) {
+          final numeroTable = tableData['numero_table'].toString();
+          // Extraire le numéro (ex: "Table 1" -> 1)
+          final match = RegExp(r'(\d+)$').firstMatch(numeroTable);
+          tableNumber = match != null ? int.tryParse(match.group(1)!) : null;
+        }
       }
     }
 
@@ -238,7 +436,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             onPressed: () => Scaffold.of(context).openDrawer(),
           ),
         ),
-        title: Text('Commande ${widget.id}'),
+        title: Text('Commande ${_commande!.reference}'),
         centerTitle: true,
         actions: [
           IconButton(
@@ -254,19 +452,19 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _HeaderInfo(
-              id: widget.id,
-              createdAt: widget.createdAt,
-              status: widget.status,
+              id: _commande!.reference,
+              createdAt: _commande!.dateCommande,
+              status: _commande!.status.value,
               total: calculatedTotal,
             ),
             const SizedBox(height: 12),
             // Informations client et table
-            if (widget.clientInfo != null || widget.tableNumber != null)
+            if (clientInfo != null || tableNumber != null)
               _ClientTableInfo(
-                clientInfo: widget.clientInfo,
-                tableNumber: widget.tableNumber,
+                clientInfo: clientInfo,
+                tableNumber: tableNumber,
               ),
-            if (widget.clientInfo != null || widget.tableNumber != null)
+            if (clientInfo != null || tableNumber != null)
               const SizedBox(height: 12),
             Expanded(
               child: Card(
@@ -276,10 +474,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 ),
                 child: ListView.separated(
                   padding: const EdgeInsets.all(12),
-                  itemCount: linesToUse?.length ?? 0,
+                  itemCount: _currentLines!.length,
                   separatorBuilder: (_, __) => const Divider(height: 1),
                   itemBuilder: (context, index) {
-                    final line = linesToUse![index];
+                    final line = _currentLines![index];
                     final String name = line['name']?.toString() ?? 'Item';
                     final int qty = (line['qty'] as int?) ?? 1;
                     final double price =

@@ -78,22 +78,89 @@ class TablesService {
     try {
       // Utiliser l'heure actuelle par défaut si non fournie
       final now = DateTime.now();
-      final dateToUse = date ?? now;
 
       // Arrondir l'heure de début à la tranche de 30 minutes suivante
       final heureDebutToUse = heureDebut ?? now;
       final heureDebutRounded = roundToNextHalfHour(heureDebutToUse);
 
       // Calculer l'heure de fin (2h30 après l'heure de début)
-      // L'heure de fin doit aussi être arrondie aux tranches de 30 minutes
+      // Ne pas arrondir l'heure de fin pour éviter les problèmes de passage à minuit
+      // L'heure de fin calculée est déjà correcte (heureDebut + 2h30)
       final heureFinCalculated =
           heureFin ?? calculateHeureFin(heureDebutRounded);
-      final heureFinRounded = roundToNextHalfHour(heureFinCalculated);
 
-      // Formater les dates et heures
+      // Utiliser la date de l'heure de début arrondie pour éviter les problèmes
+      // de passage à minuit. Cela garantit que la date correspond toujours
+      // à l'heure de début, même si l'heure de fin dépasse minuit.
+      final dateToUse = date ?? heureDebutRounded;
+
+      // Vérifier que l'heure de fin est bien après l'heure de début
+      // Si ce n'est pas le cas (comparaison des DateTime complètes),
+      // cela signifie qu'on a un problème de logique
+      if (heureFinCalculated.isBefore(heureDebutRounded) ||
+          heureFinCalculated.isAtSameMomentAs(heureDebutRounded)) {
+        // Si l'heure de fin est avant ou égale à l'heure de début,
+        // recalculer l'heure de fin
+        final heureFinRecalculated = heureDebutRounded.add(
+          const Duration(hours: 2, minutes: 30),
+        );
+        final heureFinStr = formatTime(heureFinRecalculated);
+        final dateStr = formatDate(dateToUse);
+        final heureDebutStr = formatTime(heureDebutRounded);
+
+        // Créer la requête
+        final request = TablesDisponiblesRequest(
+          date: dateStr,
+          heureDebut: heureDebutStr,
+          heureFin: heureFinStr,
+        );
+
+        // Récupérer le token d'authentification
+        final token = await _sessionService.getAccessToken();
+        if (token == null) {
+          throw TablesServiceException(
+            message: 'Token d\'authentification manquant',
+            statusCode: 401,
+          );
+        }
+
+        // Appel API
+        final url = Uri.parse(
+          '${ApiConfig.baseUrl}/reservation/tables-disponibles',
+        );
+
+        final response = await http
+            .post(
+              url,
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer $token',
+              },
+              body: jsonEncode(request.toJson()),
+            )
+            .timeout(Duration(seconds: ApiConfig.requestTimeout));
+
+        final responseData = jsonDecode(response.body) as Map<String, dynamic>;
+
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          return TablesDisponiblesResponse.fromJson(responseData);
+        } else {
+          final message =
+              responseData['message'] as String? ??
+              'Erreur lors de la récupération des tables';
+          throw TablesServiceException(
+            message: message,
+            statusCode: response.statusCode,
+          );
+        }
+      }
+
+      // Formater les dates et heures (cas normal)
+      // Utiliser l'heure de fin calculée directement (sans arrondir)
+      // pour éviter les problèmes de comparaison de strings
       final dateStr = formatDate(dateToUse);
       final heureDebutStr = formatTime(heureDebutRounded);
-      final heureFinStr = formatTime(heureFinRounded);
+      final heureFinStr = formatTime(heureFinCalculated);
 
       // Créer la requête
       final request = TablesDisponiblesRequest(

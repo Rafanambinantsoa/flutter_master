@@ -132,19 +132,12 @@ Route<dynamic> appRouter(
       // dynamic order details: /orders/{id}
       if (settings.name != null && settings.name!.startsWith('/orders/')) {
         final id = settings.name!.substring('/orders/'.length);
-        final args = (settings.arguments as Map?) ?? {};
+        final args = (settings.arguments as Map<String, dynamic>?) ?? {};
+        // Si commandeId est fourni, l'utiliser, sinon utiliser id
+        final commandeId = args['commandeId'] as String? ?? id;
         return MaterialPageRoute(
-          builder: (_) => _ProtectedRoute(
-            child: OrderDetailScreen(
-              id: id,
-              createdAt: args['createdAt'] as DateTime?,
-              status: args['status'],
-              total: (args['total'] as num?)?.toDouble(),
-              lines: (args['lines'] as List?)?.cast<Map<String, dynamic>>(),
-              clientInfo: args['clientInfo'] as Map<String, dynamic>?,
-              tableNumber: args['tableNumber'] as int?,
-            ),
-          ),
+          builder: (_) =>
+              _ProtectedRoute(child: OrderDetailScreen(commandeId: commandeId)),
         );
       }
       return MaterialPageRoute(

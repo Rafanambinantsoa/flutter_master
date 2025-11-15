@@ -89,6 +89,7 @@ class CommandeMenu {
   final int id;
   final int commandeId;
   final int menuId;
+  final String status;
   final CommandeMenuInfo menu;
   final int quantity;
 
@@ -96,6 +97,7 @@ class CommandeMenu {
     required this.id,
     required this.commandeId,
     required this.menuId,
+    required this.status,
     required this.menu,
     required this.quantity,
   });
@@ -105,6 +107,7 @@ class CommandeMenu {
       id: json['id'] as int,
       commandeId: json['commande_id'] as int,
       menuId: json['menuId'] as int,
+      status: json['status'] as String? ?? 'en_attente',
       menu: CommandeMenuInfo.fromJson(json['menu'] as Map<String, dynamic>),
       quantity: json['quantity'] as int,
     );
@@ -115,6 +118,7 @@ class CommandeMenu {
       'id': id,
       'commande_id': commandeId,
       'menuId': menuId,
+      'status': status,
       'menu': menu.toJson(),
       'quantity': quantity,
     };
@@ -316,6 +320,33 @@ class CreateCommandeResponse {
 
   factory CreateCommandeResponse.fromJson(Map<String, dynamic> json) {
     return CreateCommandeResponse(
+      message: json['message'] as String,
+      commande: Commande.fromJson(json['commande'] as Map<String, dynamic>),
+    );
+  }
+}
+
+/// Modèle pour mettre à jour les menus d'une commande (PUT request)
+class UpdateCommandeMenusRequest {
+  final List<int> menuIds;
+  final List<int> quantities;
+
+  UpdateCommandeMenusRequest({required this.menuIds, required this.quantities});
+
+  Map<String, dynamic> toJson() {
+    return {'menuIds': menuIds, 'quantities': quantities};
+  }
+}
+
+/// Modèle pour la réponse de mise à jour des menus (PUT response)
+class UpdateCommandeMenusResponse {
+  final String message;
+  final Commande commande;
+
+  UpdateCommandeMenusResponse({required this.message, required this.commande});
+
+  factory UpdateCommandeMenusResponse.fromJson(Map<String, dynamic> json) {
+    return UpdateCommandeMenusResponse(
       message: json['message'] as String,
       commande: Commande.fromJson(json['commande'] as Map<String, dynamic>),
     );

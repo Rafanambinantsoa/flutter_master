@@ -157,6 +157,109 @@ class CommandeService {
       );
     }
   }
+
+  /// Récupère les détails d'une commande par son ID
+  Future<Commande> getCommandeById(String commandeId) async {
+    final token = await _sessionService.getAccessToken();
+    if (token == null) {
+      throw CommandeServiceException(
+        message: 'Token d\'authentification manquant',
+        statusCode: 401,
+      );
+    }
+
+    final url = Uri.parse('${ApiConfig.baseUrl}/commande/$commandeId');
+    try {
+      final response = await http
+          .get(url, headers: {'Authorization': 'Bearer $token'})
+          .timeout(Duration(seconds: ApiConfig.requestTimeout));
+
+      if (response.statusCode != 200) {
+        throw CommandeServiceException(
+          message: 'Erreur lors de la récupération de la commande',
+          statusCode: response.statusCode,
+        );
+      }
+
+      final Map<String, dynamic> data =
+          jsonDecode(response.body) as Map<String, dynamic>;
+      return Commande.fromJson(data);
+    } on http.ClientException catch (e) {
+      throw CommandeServiceException(
+        message: 'Erreur de connexion: ${e.message}',
+        statusCode: 0,
+      );
+    } on FormatException {
+      throw CommandeServiceException(
+        message: 'Réponse invalide du serveur',
+        statusCode: 0,
+      );
+    } catch (e) {
+      if (e is CommandeServiceException) rethrow;
+      throw CommandeServiceException(
+        message: 'Une erreur inattendue est survenue: ${e.toString()}',
+        statusCode: 0,
+      );
+    }
+  }
+
+  /// Met à jour les menus d'une commande
+  Future<UpdateCommandeMenusResponse> updateCommandeMenus(
+    String commandeId,
+    UpdateCommandeMenusRequest request,
+  ) async {
+    final token = await _sessionService.getAccessToken();
+    if (token == null) {
+      throw CommandeServiceException(
+        message: 'Token d\'authentification manquant',
+        statusCode: 401,
+      );
+    }
+
+    final url = Uri.parse('${ApiConfig.baseUrl}/commande/$commandeId/menus');
+    try {
+      final response = await http
+          .put(
+            url,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+            body: jsonEncode(request.toJson()),
+          )
+          .timeout(Duration(seconds: ApiConfig.requestTimeout));
+
+      final responseData = jsonDecode(response.body) as Map<String, dynamic>;
+
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        final message =
+            responseData['message'] as String? ??
+            'Erreur lors de la mise à jour des menus de la commande';
+        throw CommandeServiceException(
+          message: message,
+          statusCode: response.statusCode,
+        );
+      }
+
+      return UpdateCommandeMenusResponse.fromJson(responseData);
+    } on http.ClientException catch (e) {
+      throw CommandeServiceException(
+        message: 'Erreur de connexion: ${e.message}',
+        statusCode: 0,
+      );
+    } on FormatException {
+      throw CommandeServiceException(
+        message: 'Réponse invalide du serveur',
+        statusCode: 0,
+      );
+    } catch (e) {
+      if (e is CommandeServiceException) rethrow;
+      throw CommandeServiceException(
+        message: 'Une erreur inattendue est survenue: ${e.toString()}',
+        statusCode: 0,
+      );
+    }
+  }
 }
 
 /// Exception personnalisée pour les erreurs du service de commandes

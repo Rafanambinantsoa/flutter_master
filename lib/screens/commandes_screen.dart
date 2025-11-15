@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/session_drawer.dart';
+import '../services/commande_service.dart';
 
 enum CommandeStatus { pending, served, cancelled }
 
@@ -28,38 +29,62 @@ class _CommandesScreenState extends State<CommandesScreen> {
   int _notificationCount = 3; // mock
   _Filter _selected = _Filter.all;
 
-  late final List<CommandeModel> _allOrders;
+  List<CommandeModel> _allOrders = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+  final CommandeService _commandeService = CommandeService();
 
   @override
   void initState() {
     super.initState();
-    final now = DateTime.now();
-    _allOrders = [
-      CommandeModel(
-        id: 'CMD-1021',
-        createdAt: now.subtract(const Duration(minutes: 15)),
-        status: CommandeStatus.pending,
-        total: 18_000,
-      ),
-      CommandeModel(
-        id: 'CMD-1020',
-        createdAt: now.subtract(const Duration(minutes: 45)),
-        status: CommandeStatus.served,
-        total: 25_000,
-      ),
-      CommandeModel(
-        id: 'CMD-1019',
-        createdAt: now.subtract(const Duration(hours: 2)),
-        status: CommandeStatus.cancelled,
-        total: 12_000,
-      ),
-      CommandeModel(
-        id: 'CMD-1018',
-        createdAt: now.subtract(const Duration(hours: 3, minutes: 20)),
-        status: CommandeStatus.served,
-        total: 8_000,
-      ),
-    ];
+    _loadCommandes();
+  }
+
+  Future<void> _loadCommandes() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final commandes = await _commandeService.getCommandes();
+      setState(() {
+        _allOrders = commandes.map((c) {
+          // Convertir CommandeStatus de l'API vers CommandeStatus local
+          CommandeStatus status;
+          switch (c.status.value) {
+            case 'en_attente':
+              status = CommandeStatus.pending;
+              break;
+            case 'terminee':
+              status = CommandeStatus.served;
+              break;
+            case 'annulee':
+              status = CommandeStatus.cancelled;
+              break;
+            case 'en_cours':
+            default:
+              status = CommandeStatus.pending;
+              break;
+          }
+
+          return CommandeModel(
+            id: c.reference,
+            createdAt: c.dateCommande,
+            status: status,
+            total: c.totalPrice,
+          );
+        }).toList();
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = e is CommandeServiceException
+            ? e.message
+            : 'Erreur lors du chargement des commandes';
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -98,6 +123,17 @@ class _CommandesScreenState extends State<CommandesScreen> {
         title: const Text('Commandes'),
         centerTitle: true,
         actions: [
+          IconButton(
+            icon: _isLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.refresh),
+            onPressed: _isLoading ? null : _loadCommandes,
+            tooltip: 'Actualiser',
+          ),
           Stack(
             clipBehavior: Clip.none,
             children: [
@@ -145,41 +181,57 @@ class _CommandesScreenState extends State<CommandesScreen> {
             child: _RevenueCard(amountLabel: _formatAr(revenue)),
           ),
           Expanded(
-            child: ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: filtered.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
-              itemBuilder: (context, index) {
-                final o = filtered[index];
-                return _OrderTile(
-                  order: o,
-                  onTap: () {
-                    final lines = _mockLinesFor(o.id);
-                    // Informations client mockées (à remplacer par les vraies données plus tard)
-                    final clientInfo = {
-                      'nom': 'Client ${o.id}',
-                      'email': 'client${o.id.hashCode % 100}@example.com',
-                      'telephone': '0${(o.id.hashCode % 90000000) + 10000000}',
-                      'adresse': 'Adresse ${o.id}',
-                    };
-                    // Numéro de table mocké (à remplacer par les vraies données plus tard)
-                    final tableNumber = (o.id.hashCode % 12) + 1;
-                    Navigator.of(context).pushNamed(
-                      '/orders/${o.id}',
-                      arguments: {
-                        'id': o.id,
-                        'createdAt': o.createdAt,
-                        'status': o.status,
-                        'total': o.total,
-                        'lines': lines,
-                        'clientInfo': clientInfo,
-                        'tableNumber': tableNumber,
-                      },
-                    );
-                  },
-                );
-              },
-            ),
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _errorMessage != null
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          _errorMessage!,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton.icon(
+                          onPressed: _loadCommandes,
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Réessayer'),
+                        ),
+                      ],
+                    ),
+                  )
+                : filtered.isEmpty
+                ? Center(
+                    child: Text(
+                      'Aucune commande',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: filtered.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 10),
+                    itemBuilder: (context, index) {
+                      final o = filtered[index];
+                      return _OrderTile(
+                        order: o,
+                        onTap: () {
+                          // Trouver la commande complète dans _allOrders
+                          final commandeId = o.id;
+                          Navigator.of(context).pushNamed(
+                            '/orders/$commandeId',
+                            arguments: {'commandeId': commandeId},
+                          );
+                        },
+                      );
+                    },
+                  ),
           ),
         ],
       ),
@@ -199,33 +251,6 @@ class _CommandesScreenState extends State<CommandesScreen> {
       if ((i + 1) % 3 == 0 && idx != 0) buf.write(' ');
     }
     return String.fromCharCodes(buf.toString().runes.toList().reversed) + ' Ar';
-  }
-
-  List<Map<String, dynamic>> _mockLinesFor(String id) {
-    // simple deterministic mock by id hash
-    final base = id.hashCode.abs();
-    final statuses = ['en_cours', 'terminee', 'en_attente'];
-    final items = [
-      {
-        'name': 'Burger Classique',
-        'qty': (base % 3) + 1,
-        'price': 9500.0,
-        'status': statuses[base % statuses.length],
-      },
-      {
-        'name': 'Pâtes Alfredo',
-        'qty': (base % 2) + 1,
-        'price': 11000.0,
-        'status': statuses[(base + 1) % statuses.length],
-      },
-      {
-        'name': 'Cola',
-        'qty': (base % 4) + 1,
-        'price': 3000.0,
-        'status': statuses[(base + 2) % statuses.length],
-      },
-    ];
-    return items;
   }
 }
 
