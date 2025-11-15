@@ -87,9 +87,7 @@ Route<dynamic> appRouter(
       final args = (settings.arguments as Map<String, dynamic>?) ?? {};
       return MaterialPageRoute(
         builder: (_) => _ProtectedRoute(
-          child: ClientInfoScreen(
-            table: args['table'] as DiningTable,
-          ),
+          child: ClientInfoScreen(table: args['table'] as DiningTable),
         ),
       );
     case '/order':
@@ -143,6 +141,8 @@ Route<dynamic> appRouter(
               status: args['status'],
               total: (args['total'] as num?)?.toDouble(),
               lines: (args['lines'] as List?)?.cast<Map<String, dynamic>>(),
+              clientInfo: args['clientInfo'] as Map<String, dynamic>?,
+              tableNumber: args['tableNumber'] as int?,
             ),
           ),
         );

@@ -202,8 +202,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                   if (value == null || value.isEmpty) {
                                     return 'Veuillez entrer votre mot de passe';
                                   }
-                                  if (value.length < 4) {
-                                    return 'Le mot de passe doit contenir au moins 4 caractères';
+                                  if (value.length < 6) {
+                                    return 'Le mot de passe doit contenir au moins 6 caractères';
                                   }
                                   return null;
                                 },

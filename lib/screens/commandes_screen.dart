@@ -155,6 +155,15 @@ class _CommandesScreenState extends State<CommandesScreen> {
                   order: o,
                   onTap: () {
                     final lines = _mockLinesFor(o.id);
+                    // Informations client mockées (à remplacer par les vraies données plus tard)
+                    final clientInfo = {
+                      'nom': 'Client ${o.id}',
+                      'email': 'client${o.id.hashCode % 100}@example.com',
+                      'telephone': '0${(o.id.hashCode % 90000000) + 10000000}',
+                      'adresse': 'Adresse ${o.id}',
+                    };
+                    // Numéro de table mocké (à remplacer par les vraies données plus tard)
+                    final tableNumber = (o.id.hashCode % 12) + 1;
                     Navigator.of(context).pushNamed(
                       '/orders/${o.id}',
                       arguments: {
@@ -163,6 +172,8 @@ class _CommandesScreenState extends State<CommandesScreen> {
                         'status': o.status,
                         'total': o.total,
                         'lines': lines,
+                        'clientInfo': clientInfo,
+                        'tableNumber': tableNumber,
                       },
                     );
                   },
@@ -193,10 +204,26 @@ class _CommandesScreenState extends State<CommandesScreen> {
   List<Map<String, dynamic>> _mockLinesFor(String id) {
     // simple deterministic mock by id hash
     final base = id.hashCode.abs();
+    final statuses = ['en_cours', 'terminee', 'en_attente'];
     final items = [
-      {'name': 'Burger Classique', 'qty': (base % 3) + 1, 'price': 9500.0},
-      {'name': 'Pâtes Alfredo', 'qty': (base % 2) + 1, 'price': 11000.0},
-      {'name': 'Cola', 'qty': (base % 4) + 1, 'price': 3000.0},
+      {
+        'name': 'Burger Classique',
+        'qty': (base % 3) + 1,
+        'price': 9500.0,
+        'status': statuses[base % statuses.length],
+      },
+      {
+        'name': 'Pâtes Alfredo',
+        'qty': (base % 2) + 1,
+        'price': 11000.0,
+        'status': statuses[(base + 1) % statuses.length],
+      },
+      {
+        'name': 'Cola',
+        'qty': (base % 4) + 1,
+        'price': 3000.0,
+        'status': statuses[(base + 2) % statuses.length],
+      },
     ];
     return items;
   }

@@ -30,12 +30,24 @@ class AuthService {
         // Succès
         return LoginResponse.fromJson(responseData);
       } else {
-        // Erreur
-        final errorResponse = LoginErrorResponse.fromJson(responseData);
-        throw AuthException(
-          message: errorResponse.message,
-          statusCode: errorResponse.statusCode,
-        );
+        // Erreur - gérer les messages qui peuvent être une liste ou une chaîne
+        String errorMessage = 'Erreur lors de la connexion';
+
+        if (responseData.containsKey('message')) {
+          final messageData = responseData['message'];
+          if (messageData is List) {
+            // Si c'est une liste, prendre le premier message
+            errorMessage = messageData.isNotEmpty
+                ? messageData[0].toString()
+                : errorMessage;
+          } else if (messageData is String) {
+            errorMessage = messageData;
+          }
+        }
+
+        final statusCode =
+            responseData['statusCode'] as int? ?? response.statusCode;
+        throw AuthException(message: errorMessage, statusCode: statusCode);
       }
     } on http.ClientException catch (e) {
       throw AuthException(
@@ -69,4 +81,3 @@ class AuthException implements Exception {
   @override
   String toString() => message;
 }
-

@@ -659,6 +659,36 @@ class _CartScreenState extends State<CartScreen> {
   final CommandeService _commandeService = CommandeService();
   bool _isSubmitting = false;
 
+  DateTime _roundToNextHalfHour(DateTime dateTime) {
+    final minutes = dateTime.minute;
+
+    if (minutes == 0 || minutes == 30) {
+      return DateTime(
+        dateTime.year,
+        dateTime.month,
+        dateTime.day,
+        dateTime.hour,
+        minutes,
+      );
+    } else if (minutes < 30) {
+      return DateTime(
+        dateTime.year,
+        dateTime.month,
+        dateTime.day,
+        dateTime.hour,
+        30,
+      );
+    } else {
+      return DateTime(
+        dateTime.year,
+        dateTime.month,
+        dateTime.day,
+        dateTime.hour + 1,
+        0,
+      );
+    }
+  }
+
   Future<void> _submitCommande() async {
     if (_isSubmitting) return;
 
@@ -692,32 +722,16 @@ class _CartScreenState extends State<CartScreen> {
 
       // Gérer la date et l'heure pour la réservation
       final now = DateTime.now();
-      final dateCommande = now;
+      final startTime = _roundToNextHalfHour(now);
+      final endTime = startTime.add(const Duration(hours: 2, minutes: 30));
+      final dateCommande = startTime;
 
-      // Pour les clients sans réservation, utiliser maintenant + 2h30
-      // Pour les réservations existantes, utiliser les données de la réservation
-      String dateReservation;
-      String heureDebut;
-      String heureFin;
-
-      if (widget.reservation != null) {
-        // Utiliser les données de la réservation existante
-        dateReservation =
-            '${widget.reservation!.date.year}-${widget.reservation!.date.month.toString().padLeft(2, '0')}-${widget.reservation!.date.day.toString().padLeft(2, '0')}';
-        heureDebut =
-            '${widget.reservation!.heureDebut.hour.toString().padLeft(2, '0')}:${widget.reservation!.heureDebut.minute.toString().padLeft(2, '0')}';
-        heureFin =
-            '${widget.reservation!.heureFin.hour.toString().padLeft(2, '0')}:${widget.reservation!.heureFin.minute.toString().padLeft(2, '0')}';
-      } else {
-        // Pour les clients sans réservation, créer une réservation pour maintenant
-        dateReservation =
-            '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-        heureDebut =
-            '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
-        final finTime = now.add(const Duration(hours: 2, minutes: 30));
-        heureFin =
-            '${finTime.hour.toString().padLeft(2, '0')}:${finTime.minute.toString().padLeft(2, '0')}';
-      }
+      final dateReservation =
+          '${startTime.year}-${startTime.month.toString().padLeft(2, '0')}-${startTime.day.toString().padLeft(2, '0')}';
+      final heureDebut =
+          '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}';
+      final heureFin =
+          '${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}';
 
       // Gérer les informations client
       String nom;
@@ -781,12 +795,14 @@ class _CartScreenState extends State<CartScreen> {
       // Soumettre au kitchen (local)
       widget.repo.submitToKitchen(widget.cart.orderId);
 
-      // Retourner à l'écran précédent après un court délai
+      // Retourner à l'accueil après un court délai
       await Future.delayed(const Duration(milliseconds: 500));
       if (!mounted) return;
+
+      // Fermer tous les écrans jusqu'à l'accueil (ou naviguer vers l'accueil)
       Navigator.of(
         context,
-      ).pop(true); // true indique que la commande a été créée
+      ).pushNamedAndRemoveUntil('/accueil', (route) => false);
     } catch (e) {
       if (!mounted) return;
 

@@ -130,6 +130,17 @@ class _AccueilScreenState extends State<AccueilScreen> {
         title: const Text('Accueil'),
         centerTitle: true,
         actions: [
+          IconButton(
+            icon: _isLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.refresh),
+            onPressed: _isLoading ? null : _loadAvailableTables,
+            tooltip: 'Actualiser',
+          ),
           Stack(
             clipBehavior: Clip.none,
             children: [
