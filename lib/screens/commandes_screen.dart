@@ -1,22 +1,9 @@
 import 'package:flutter/material.dart';
-import '../widgets/session_drawer.dart';
+
+import '../models/commande.dart';
 import '../services/commande_service.dart';
-
-enum CommandeStatus { pending, served, cancelled }
-
-class CommandeModel {
-  final String id;
-  final DateTime createdAt;
-  final CommandeStatus status;
-  final double total;
-
-  const CommandeModel({
-    required this.id,
-    required this.createdAt,
-    required this.status,
-    required this.total,
-  });
-}
+import '../utils/commande_status_extensions.dart';
+import '../widgets/session_drawer.dart';
 
 class CommandesScreen extends StatefulWidget {
   const CommandesScreen({super.key});
@@ -29,7 +16,7 @@ class _CommandesScreenState extends State<CommandesScreen> {
   int _notificationCount = 3; // mock
   _Filter _selected = _Filter.all;
 
-  List<CommandeModel> _allOrders = [];
+  List<Commande> _allOrders = [];
   bool _isLoading = true;
   String? _errorMessage;
   final CommandeService _commandeService = CommandeService();
@@ -49,32 +36,7 @@ class _CommandesScreenState extends State<CommandesScreen> {
     try {
       final commandes = await _commandeService.getCommandes();
       setState(() {
-        _allOrders = commandes.map((c) {
-          // Convertir CommandeStatus de l'API vers CommandeStatus local
-          CommandeStatus status;
-          switch (c.status.value) {
-            case 'en_attente':
-              status = CommandeStatus.pending;
-              break;
-            case 'terminee':
-              status = CommandeStatus.served;
-              break;
-            case 'annulee':
-              status = CommandeStatus.cancelled;
-              break;
-            case 'en_cours':
-            default:
-              status = CommandeStatus.pending;
-              break;
-          }
-
-          return CommandeModel(
-            id: c.reference,
-            createdAt: c.dateCommande,
-            status: status,
-            total: c.totalPrice,
-          );
-        }).toList();
+        _allOrders = commandes;
         _isLoading = false;
       });
     } catch (e) {
@@ -90,25 +52,26 @@ class _CommandesScreenState extends State<CommandesScreen> {
   @override
   Widget build(BuildContext context) {
     final today = DateTime.now();
-    final List<CommandeModel> todays = _allOrders
-        .where((o) => _isSameDay(o.createdAt, today))
+    final List<Commande> todays = _allOrders
+        .where((o) => _isSameDay(o.dateCommande, today))
         .toList();
     final filtered = todays.where((o) {
       switch (_selected) {
         case _Filter.all:
           return true;
         case _Filter.pending:
-          return o.status == CommandeStatus.pending;
+          return o.status == CommandeStatus.enAttente ||
+              o.status == CommandeStatus.enCours;
         case _Filter.served:
-          return o.status == CommandeStatus.served;
+          return o.status == CommandeStatus.terminee;
         case _Filter.cancelled:
-          return o.status == CommandeStatus.cancelled;
+          return o.status == CommandeStatus.annulee;
       }
     }).toList();
 
     final int revenue = todays
-        .where((o) => o.status == CommandeStatus.served)
-        .fold<int>(0, (sum, o) => sum + o.total.toInt());
+        .where((o) => o.status == CommandeStatus.terminee)
+        .fold<int>(0, (sum, o) => sum + o.totalPrice.toInt());
 
     return Scaffold(
       drawer: const SessionDrawer(),
@@ -223,7 +186,7 @@ class _CommandesScreenState extends State<CommandesScreen> {
                         order: o,
                         onTap: () {
                           // Trouver la commande complète dans _allOrders
-                          final commandeId = o.id;
+                          final commandeId = o.reference;
                           Navigator.of(context).pushNamed(
                             '/orders/$commandeId',
                             arguments: {'commandeId': commandeId},
@@ -271,7 +234,7 @@ class _FiltersBar extends StatelessWidget {
         children: [
           _chip('Tous', _Filter.all),
           _chip('En attente', _Filter.pending),
-          _chip('Servies', _Filter.served),
+          _chip('Terminées', _Filter.served),
           _chip('Annulées', _Filter.cancelled),
         ],
       ),
@@ -292,7 +255,7 @@ class _FiltersBar extends StatelessWidget {
 }
 
 class _OrderTile extends StatelessWidget {
-  final CommandeModel order;
+  final Commande order;
   final VoidCallback? onTap;
 
   const _OrderTile({required this.order, this.onTap});
@@ -300,8 +263,8 @@ class _OrderTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final status = _statusLabel(order.status);
-    final color = _statusColor(cs, order.status);
+    final status = order.status.displayLabel;
+    final color = order.status.displayColor;
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -330,7 +293,7 @@ class _OrderTile extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    order.id,
+                    order.reference,
                     style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ),
@@ -362,12 +325,12 @@ class _OrderTile extends StatelessWidget {
                   Icon(Icons.access_time, size: 14, color: cs.onSurfaceVariant),
                   const SizedBox(width: 4),
                   Text(
-                    _formatTime(order.createdAt),
+                    _formatTime(order.dateCommande),
                     style: TextStyle(color: cs.onSurfaceVariant),
                   ),
                   const Spacer(),
                   Text(
-                    '${order.total.toStringAsFixed(0)} Ar',
+                    '${order.totalPrice.toStringAsFixed(0)} Ar',
                     style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ],
@@ -383,28 +346,6 @@ class _OrderTile extends StatelessWidget {
     final h = d.hour.toString().padLeft(2, '0');
     final m = d.minute.toString().padLeft(2, '0');
     return '$h:$m';
-  }
-
-  String _statusLabel(CommandeStatus s) {
-    switch (s) {
-      case CommandeStatus.pending:
-        return 'En attente';
-      case CommandeStatus.served:
-        return 'Servie';
-      case CommandeStatus.cancelled:
-        return 'Annulée';
-    }
-  }
-
-  Color _statusColor(ColorScheme cs, CommandeStatus s) {
-    switch (s) {
-      case CommandeStatus.pending:
-        return Colors.orange;
-      case CommandeStatus.served:
-        return Colors.green;
-      case CommandeStatus.cancelled:
-        return Colors.red;
-    }
   }
 }
 

@@ -198,11 +198,46 @@ enum CommandeStatus {
   final String value;
   const CommandeStatus(this.value);
 
-  static CommandeStatus fromString(String value) {
-    return CommandeStatus.values.firstWhere(
-      (e) => e.value == value,
-      orElse: () => CommandeStatus.enAttente,
-    );
+  static CommandeStatus fromString(String? value) {
+    final normalized = _normalize(value);
+    switch (normalized) {
+      case 'en_attente':
+      case 'attente':
+      case 'pending':
+        return CommandeStatus.enAttente;
+      case 'en_cours':
+      case 'encours':
+      case 'cours':
+      case 'in_progress':
+        return CommandeStatus.enCours;
+      case 'terminee':
+      case 'termine':
+      case 'terminer':
+      case 'completed':
+        return CommandeStatus.terminee;
+      case 'annulee':
+      case 'annule':
+      case 'annuler':
+      case 'cancelled':
+        return CommandeStatus.annulee;
+      default:
+        return CommandeStatus.enAttente;
+    }
+  }
+
+  static String _normalize(String? value) {
+    if (value == null) return '';
+    final lower = value.toLowerCase().trim();
+    final withoutAccents = lower
+        .replaceAll('é', 'e')
+        .replaceAll('è', 'e')
+        .replaceAll('ê', 'e')
+        .replaceAll('à', 'a')
+        .replaceAll('ù', 'u')
+        .replaceAll('ï', 'i')
+        .replaceAll('î', 'i')
+        .replaceAll('ô', 'o');
+    return withoutAccents.replaceAll(' ', '_').replaceAll('-', '_');
   }
 }
 

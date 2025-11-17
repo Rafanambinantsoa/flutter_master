@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+
+import '../models/commande.dart';
+import '../services/commande_service.dart';
+import '../utils/commande_status_extensions.dart';
 import '../widgets/session_drawer.dart';
 import 'menu_selection_screen.dart';
-import '../services/commande_service.dart';
-import '../models/commande.dart';
 
 class OrderDetailScreen extends StatefulWidget {
   final String commandeId; // Référence de la commande (ex: "COM-5")
@@ -454,7 +456,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             _HeaderInfo(
               id: _commande!.reference,
               createdAt: _commande!.dateCommande,
-              status: _commande!.status.value,
+              status: _commande!.status,
               total: calculatedTotal,
             ),
             const SizedBox(height: 12),
@@ -607,7 +609,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 class _HeaderInfo extends StatelessWidget {
   final String id;
   final DateTime? createdAt;
-  final dynamic status;
+  final CommandeStatus? status;
   final double? total;
 
   const _HeaderInfo({
@@ -646,14 +648,16 @@ class _HeaderInfo extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: cs.primary.withOpacity(0.1),
+                    color: status!.displayColor.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: cs.primary.withOpacity(0.3)),
+                    border: Border.all(
+                      color: status!.displayColor.withOpacity(0.4),
+                    ),
                   ),
                   child: Text(
-                    '$status',
+                    status!.displayLabel,
                     style: TextStyle(
-                      color: cs.primary,
+                      color: status!.displayColor,
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
                     ),
@@ -874,21 +878,34 @@ class _StatusBadge extends StatelessWidget {
 
   const _StatusBadge({required this.status});
 
+  String _normalize(String value) {
+    final lower = value.toLowerCase().trim();
+    final withoutAccents = lower
+        .replaceAll('é', 'e')
+        .replaceAll('è', 'e')
+        .replaceAll('ê', 'e')
+        .replaceAll('à', 'a')
+        .replaceAll('ù', 'u')
+        .replaceAll('ï', 'i')
+        .replaceAll('î', 'i');
+    return withoutAccents.replaceAll(' ', '_').replaceAll('-', '_');
+  }
+
   String _getStatusLabel(String status) {
-    switch (status.toLowerCase()) {
+    switch (_normalize(status)) {
       case 'en_cours':
-      case 'en cours':
+      case 'encours':
         return 'En cours';
       case 'terminee':
-      case 'terminée':
       case 'termine':
+      case 'terminer':
         return 'Terminé';
       case 'en_attente':
-      case 'en attente':
+      case 'enattente':
         return 'En attente';
       case 'annulee':
-      case 'annulée':
       case 'annule':
+      case 'annuler':
         return 'Annulé';
       default:
         return status;
@@ -896,20 +913,20 @@ class _StatusBadge extends StatelessWidget {
   }
 
   Color _getStatusColor(String status, ColorScheme cs) {
-    switch (status.toLowerCase()) {
+    switch (_normalize(status)) {
       case 'en_cours':
-      case 'en cours':
+      case 'encours':
         return Colors.orange;
       case 'terminee':
-      case 'terminée':
       case 'termine':
+      case 'terminer':
         return Colors.green;
       case 'en_attente':
-      case 'en attente':
+      case 'enattente':
         return Colors.blue;
       case 'annulee':
-      case 'annulée':
       case 'annule':
+      case 'annuler':
         return Colors.red;
       default:
         return cs.primary;
