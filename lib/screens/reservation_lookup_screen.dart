@@ -3,9 +3,9 @@ import '../services/reservation_service.dart';
 import 'client_selection_screen.dart';
 
 class ReservationLookupScreen extends StatefulWidget {
-  final ClientType clientType;
+  final ClientType? clientType;
 
-  const ReservationLookupScreen({super.key, required this.clientType});
+  const ReservationLookupScreen({super.key, this.clientType});
 
   @override
   State<ReservationLookupScreen> createState() =>
@@ -69,12 +69,21 @@ class _ReservationLookupScreenState extends State<ReservationLookupScreen> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final typeText = widget.clientType == ClientType.standardReservation
-        ? 'standard'
-        : 'avec menu prépayé';
+    String typeText;
+    if (widget.clientType == null) {
+      typeText = '';
+    } else if (widget.clientType == ClientType.standardReservation) {
+      typeText = 'standard';
+    } else {
+      typeText = 'avec menu prépayé';
+    }
+
+    final appBarTitle = typeText.isEmpty
+        ? 'Recherche de réservation'
+        : 'Réservation $typeText';
 
     return Scaffold(
-      appBar: AppBar(title: Text('Réservation $typeText'), centerTitle: true),
+      appBar: AppBar(title: Text(appBarTitle), centerTitle: true),
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(

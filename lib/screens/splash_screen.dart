@@ -30,8 +30,8 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!mounted) return;
 
     if (isLoggedIn) {
-      // Utilisateur connecté - aller à la sélection de client
-      Navigator.of(context).pushReplacementNamed('/client-selection');
+      // Utilisateur connecté - aller au dashboard
+      Navigator.of(context).pushReplacementNamed('/accueil');
     } else {
       // Pas de session - aller au login
       Navigator.of(context).pushReplacementNamed('/login');
@@ -65,4 +65,3 @@ class _SplashScreenState extends State<SplashScreen> {
     );
   }
 }
-

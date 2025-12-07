@@ -47,3 +47,4 @@ app.*.map.json
 
 .cursor/rules/kluster-code-verify.mdc
 .kluster
+gemini.sh

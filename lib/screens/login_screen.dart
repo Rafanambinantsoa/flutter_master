@@ -293,9 +293,9 @@ class _LoginScreenState extends State<LoginScreen> {
         userEmail: loginResponse.user.email,
       );
 
-      // Succès - naviguer vers la sélection de client
+      // Succès - naviguer vers le dashboard
       if (mounted) {
-        Navigator.of(context).pushReplacementNamed('/client-selection');
+        Navigator.of(context).pushReplacementNamed('/accueil');
       }
     } on AuthException catch (e) {
       // Erreur d'authentification

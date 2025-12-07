@@ -7,7 +7,8 @@ import 'services/mock_api_service.dart';
 import 'widgets/session_checker.dart';
 import 'screens/login_screen.dart';
 import 'screens/splash_screen.dart';
-import 'screens/accueil_screen.dart';
+import 'screens/dashboard_screen.dart';
+import 'screens/tables_screen.dart';
 import 'screens/order_screen.dart';
 import 'screens/commandes_screen.dart';
 import 'screens/notifications_screen.dart';
@@ -45,7 +46,11 @@ Route<dynamic> appRouter(
     case '/':
     case '/accueil':
       return MaterialPageRoute(
-        builder: (_) => _ProtectedRoute(child: AccueilScreen(repo: repo)),
+        builder: (_) => _ProtectedRoute(child: const DashboardScreen()),
+      );
+    case '/tables':
+      return MaterialPageRoute(
+        builder: (_) => _ProtectedRoute(child: TablesScreen(repo: repo)),
       );
     case '/client-selection':
       return MaterialPageRoute(
@@ -57,7 +62,9 @@ Route<dynamic> appRouter(
       final args = (settings.arguments as Map<String, dynamic>?) ?? {};
       return MaterialPageRoute(
         builder: (_) => _ProtectedRoute(
-          child: ReservationLookupScreen(clientType: args['type'] as dynamic),
+          child: ReservationLookupScreen(
+            clientType: args['type'] as ClientType?,
+          ),
         ),
       );
     case '/reservation-detail':
