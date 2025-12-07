@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'data/mock_repository.dart';
 import 'models/table.dart';
 import 'models/reservation.dart';
+import 'models/reservation_detail.dart';
 import 'services/mock_api_service.dart';
 import 'widgets/session_checker.dart';
 import 'screens/login_screen.dart';
@@ -14,6 +15,7 @@ import 'screens/order_detail_screen.dart';
 import 'screens/client_selection_screen.dart';
 import 'screens/reservation_lookup_screen.dart';
 import 'screens/reservation_detail_screen.dart';
+import 'screens/reservation_detail_prepaid_screen.dart';
 import 'screens/available_tables_screen.dart';
 import 'screens/client_info_screen.dart';
 import 'models/client_info.dart';
@@ -55,21 +57,38 @@ Route<dynamic> appRouter(
       final args = (settings.arguments as Map<String, dynamic>?) ?? {};
       return MaterialPageRoute(
         builder: (_) => _ProtectedRoute(
-          child: ReservationLookupScreen(
-            apiService: apiService,
-            clientType: args['type'] as dynamic,
-          ),
+          child: ReservationLookupScreen(clientType: args['type'] as dynamic),
         ),
       );
     case '/reservation-detail':
       final args = (settings.arguments as Map<String, dynamic>?) ?? {};
-      return MaterialPageRoute(
-        builder: (_) => _ProtectedRoute(
-          child: ReservationDetailScreen(
-            reservation: args['reservation'] as Reservation,
-            apiService: apiService,
+      final reservation = args['reservation'];
+
+      // Si c'est une ReservationDetail (nouveau format), utiliser le nouvel écran
+      if (reservation is ReservationDetail) {
+        return MaterialPageRoute(
+          builder: (_) => _ProtectedRoute(
+            child: ReservationDetailPrepaidScreen(reservation: reservation),
           ),
-        ),
+        );
+      }
+
+      // Sinon, utiliser l'ancien écran pour compatibilité
+      if (reservation is Reservation) {
+        return MaterialPageRoute(
+          builder: (_) => _ProtectedRoute(
+            child: ReservationDetailScreen(
+              reservation: reservation,
+              apiService: apiService,
+            ),
+          ),
+        );
+      }
+
+      // Erreur si le type n'est pas reconnu
+      return MaterialPageRoute(
+        builder: (_) =>
+            Scaffold(body: Center(child: Text('Type de réservation invalide'))),
       );
     case '/available-tables':
       final args = (settings.arguments as Map<String, dynamic>?) ?? {};

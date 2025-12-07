@@ -387,3 +387,82 @@ class UpdateCommandeMenusResponse {
     );
   }
 }
+
+/// Modèle pour créer une commande à partir d'une réservation (POST request)
+class CreateCommandeFromReservationRequest {
+  final int reservationId;
+  final int clientId;
+  final List<int> menuIds;
+  final List<int> quantities;
+  final DateTime dateCommande;
+
+  CreateCommandeFromReservationRequest({
+    required this.reservationId,
+    required this.clientId,
+    required this.menuIds,
+    required this.quantities,
+    required this.dateCommande,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'reservationId': reservationId,
+      'clientId': clientId,
+      'menuIds': menuIds,
+      'quantities': quantities,
+      'date_commande': dateCommande.toIso8601String(),
+    };
+  }
+}
+
+/// Modèle simplifié pour une commande (utilisé dans la réponse from-reservation)
+class SimpleCommande {
+  final int id;
+  final String reference;
+  final int reservationId;
+  final DateTime dateCommande;
+  final String status;
+  final num totalPrice;
+
+  SimpleCommande({
+    required this.id,
+    required this.reference,
+    required this.reservationId,
+    required this.dateCommande,
+    required this.status,
+    required this.totalPrice,
+  });
+
+  factory SimpleCommande.fromJson(Map<String, dynamic> json) {
+    return SimpleCommande(
+      id: json['id'] as int,
+      reference: json['reference'] as String,
+      reservationId: json['reservation_id'] as int,
+      dateCommande: DateTime.parse(json['date_commande'] as String),
+      status: json['status'] as String,
+      totalPrice: json['total_price'] as num,
+    );
+  }
+}
+
+/// Modèle pour la réponse de création de commande à partir d'une réservation
+class CreateCommandeFromReservationResponse {
+  final String message;
+  final SimpleCommande commande;
+
+  CreateCommandeFromReservationResponse({
+    required this.message,
+    required this.commande,
+  });
+
+  factory CreateCommandeFromReservationResponse.fromJson(
+    Map<String, dynamic> json,
+  ) {
+    return CreateCommandeFromReservationResponse(
+      message: json['message'] as String,
+      commande: SimpleCommande.fromJson(
+        json['commande'] as Map<String, dynamic>,
+      ),
+    );
+  }
+}

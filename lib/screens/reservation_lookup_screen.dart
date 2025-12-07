@@ -1,17 +1,11 @@
 import 'package:flutter/material.dart';
-import '../services/mock_api_service.dart';
-import '../models/reservation.dart';
+import '../services/reservation_service.dart';
 import 'client_selection_screen.dart';
 
 class ReservationLookupScreen extends StatefulWidget {
-  final MockApiService apiService;
   final ClientType clientType;
 
-  const ReservationLookupScreen({
-    super.key,
-    required this.apiService,
-    required this.clientType,
-  });
+  const ReservationLookupScreen({super.key, required this.clientType});
 
   @override
   State<ReservationLookupScreen> createState() =>
@@ -20,6 +14,7 @@ class ReservationLookupScreen extends StatefulWidget {
 
 class _ReservationLookupScreenState extends State<ReservationLookupScreen> {
   final TextEditingController _codeController = TextEditingController();
+  final ReservationService _reservationService = ReservationService();
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -30,7 +25,7 @@ class _ReservationLookupScreenState extends State<ReservationLookupScreen> {
   }
 
   Future<void> _lookupReservation() async {
-    final code = _codeController.text.trim().toUpperCase();
+    final code = _codeController.text.trim();
 
     if (code.isEmpty) {
       setState(() {
@@ -45,41 +40,27 @@ class _ReservationLookupScreenState extends State<ReservationLookupScreen> {
     });
 
     try {
-      final reservation = await widget.apiService.getReservationByCode(code);
+      final reservation = await _reservationService.searchByCode(code);
 
       if (!mounted) return;
-
-      if (reservation == null) {
-        setState(() {
-          _errorMessage =
-              'Aucune réservation trouvée avec ce code ou réservation non active';
-          _isLoading = false;
-        });
-        return;
-      }
-
-      // Vérifier que le type de réservation correspond
-      if ((widget.clientType == ClientType.standardReservation &&
-              reservation.type != ReservationType.standard) ||
-          (widget.clientType == ClientType.prepaidReservation &&
-              reservation.type != ReservationType.prepaidMenu)) {
-        setState(() {
-          _errorMessage =
-              'Le type de réservation ne correspond pas à la sélection';
-          _isLoading = false;
-        });
-        return;
-      }
 
       // Navigation vers l'écran de détails de réservation
       Navigator.of(context).pushNamed(
         '/reservation-detail',
         arguments: {'reservation': reservation},
       );
+    } on ReservationServiceException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = e.message;
+        _isLoading = false;
+      });
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _errorMessage = 'Une erreur est survenue: ${e.toString()}';
+        //log the error
+        debugPrint('Error: ${e.toString()}');
         _isLoading = false;
       });
     }

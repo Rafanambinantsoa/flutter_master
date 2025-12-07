@@ -260,6 +260,63 @@ class CommandeService {
       );
     }
   }
+
+  /// Crée une commande à partir d'une réservation
+  Future<CreateCommandeFromReservationResponse> createCommandeFromReservation(
+    CreateCommandeFromReservationRequest request,
+  ) async {
+    final token = await _sessionService.getAccessToken();
+    if (token == null) {
+      throw CommandeServiceException(
+        message: 'Token d\'authentification manquant',
+        statusCode: 401,
+      );
+    }
+
+    final url = Uri.parse('${ApiConfig.baseUrl}/commande/from-reservation');
+    try {
+      final response = await http
+          .post(
+            url,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+            body: jsonEncode(request.toJson()),
+          )
+          .timeout(Duration(seconds: ApiConfig.requestTimeout));
+
+      final responseData = jsonDecode(response.body) as Map<String, dynamic>;
+
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        final message =
+            responseData['message'] as String? ??
+            'Erreur lors de la création de la commande à partir de la réservation';
+        throw CommandeServiceException(
+          message: message,
+          statusCode: response.statusCode,
+        );
+      }
+
+      return CreateCommandeFromReservationResponse.fromJson(responseData);
+    } on http.ClientException catch (e) {
+      throw CommandeServiceException(
+        message: 'Erreur de connexion: ${e.message}',
+        statusCode: 0,
+      );
+    } on FormatException {
+      throw CommandeServiceException(
+        message: 'Réponse invalide du serveur',
+        statusCode: 0,
+      );
+    } catch (e) {
+      if (e is CommandeServiceException) rethrow;
+      throw CommandeServiceException(
+        message: 'Une erreur inattendue est survenue: ${e.toString()}',
+        statusCode: 0,
+      );
+    }
+  }
 }
 
 /// Exception personnalisée pour les erreurs du service de commandes
