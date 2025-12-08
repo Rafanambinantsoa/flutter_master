@@ -97,14 +97,15 @@ flutter:
 
 # Configuration pour générer les icônes de l'application
 flutter_launcher_icons:
-  android: true
+  android: false # Les icônes Android sont déjà copiées manuellement depuis assets/AppIcons/android/
   ios: true
+  remove_alpha_ios: true # Supprime le canal alpha pour iOS (requis par l'App Store)
   web:
     generate: true
-    image_path: "assets/logo_app.png"
+    image_path: "assets/AppIcons/playstore.png"
     background_color: "#ffffff"
     theme_color: "#0175C2"
-  image_path: "assets/logo_app.png"
+  image_path: "assets/AppIcons/appstore.png" # Pour iOS
   min_sdk_android: 21 # Android min sdk min:16, default 21
   adaptive_icon_background: "#ffffff" # android-adaptive-icon, default: #ffffff
-  adaptive_icon_foreground: "assets/logo_app.png" # android-adaptive-icon, default: #ffffff
+  adaptive_icon_foreground: "assets/AppIcons/playstore.png" # android-adaptive-icon, default: #ffffff
