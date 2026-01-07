@@ -113,7 +113,7 @@ class _ClientSelectionScreenState extends State<ClientSelectionScreen> {
       case ClientType.noReservation:
         Navigator.of(
           context,
-        ).pushNamed('/accueil', arguments: {'type': ClientType.noReservation});
+        ).pushNamed('/tables', arguments: {'type': ClientType.noReservation});
         break;
       case ClientType.standardReservation:
         Navigator.of(context).pushNamed(
