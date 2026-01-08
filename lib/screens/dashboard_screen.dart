@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../widgets/session_drawer.dart';
-import '../services/notification_service.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -9,8 +7,6 @@ class DashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final notificationService = Provider.of<NotificationService>(context);
-    final unreadCount = notificationService.notifications.where((n) => !n.isRead).length;
 
     return Scaffold(
       drawer: const SessionDrawer(),
@@ -24,38 +20,10 @@ class DashboardScreen extends StatelessWidget {
         title: const Text('Dashboard'),
         centerTitle: true,
         actions: [
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.notifications_outlined),
-                onPressed: () => Navigator.of(context).pushNamed('/notifications'),
-                tooltip: 'Notifications',
-              ),
-              if (unreadCount > 0)
-                Positioned(
-                  right: 6,
-                  top: 6,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.redAccent,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      '$unreadCount',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
+          IconButton(
+            icon: const Icon(Icons.notifications_outlined),
+            onPressed: () => Navigator.of(context).pushNamed('/notifications'),
+            tooltip: 'Notifications',
           ),
         ],
       ),

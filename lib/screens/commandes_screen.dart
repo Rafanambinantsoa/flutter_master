@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+
 import '../models/commande.dart';
 import '../services/commande_service.dart';
 import '../utils/commande_status_extensions.dart';
 import '../widgets/session_drawer.dart';
-import '../services/notification_service.dart';
 
 class CommandesScreen extends StatefulWidget {
   const CommandesScreen({super.key});
@@ -14,6 +13,7 @@ class CommandesScreen extends StatefulWidget {
 }
 
 class _CommandesScreenState extends State<CommandesScreen> {
+  int _notificationCount = 3; // mock
   _Filter _selected = _Filter.all;
 
   List<Commande> _allOrders = [];
@@ -51,8 +51,6 @@ class _CommandesScreenState extends State<CommandesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final notificationService = Provider.of<NotificationService>(context);
-    final unreadCount = notificationService.notifications.where((n) => !n.isRead).length;
     final today = DateTime.now();
     final List<Commande> todays = _allOrders
         .where((o) => _isSameDay(o.dateCommande, today))
@@ -108,7 +106,7 @@ class _CommandesScreenState extends State<CommandesScreen> {
                     Navigator.of(context).pushNamed('/notifications'),
                 tooltip: 'Notifications',
               ),
-              if (unreadCount > 0)
+              if (_notificationCount > 0)
                 Positioned(
                   right: 6,
                   top: 6,
@@ -122,7 +120,7 @@ class _CommandesScreenState extends State<CommandesScreen> {
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(
-                      '$unreadCount',
+                      '$_notificationCount',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 11,
