@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../widgets/session_drawer.dart';
+import '../services/notification_service.dart';
 
 enum NotificationKind { order, system, info }
 
 class AppNotification {
-  final String id;
+  final int id;
   final String title;
   final String message;
   final DateTime createdAt;
@@ -29,47 +31,15 @@ class NotificationsScreen extends StatefulWidget {
 }
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
-  int _notificationCount = 3; // unread count mock
   _NotifFilter _selected = _NotifFilter.all;
-
-  late List<AppNotification> _all;
-
-  @override
-  void initState() {
-    super.initState();
-    final now = DateTime.now();
-    _all = [
-      AppNotification(
-        id: 'n1',
-        title: 'Commande prête',
-        message: 'La commande CMD-1020 est prête à être servie.',
-        createdAt: now.subtract(const Duration(minutes: 5)),
-        kind: NotificationKind.order,
-        isRead: false,
-      ),
-      AppNotification(
-        id: 'n2',
-        title: 'Système',
-        message: 'Mise à jour planifiée à 22:00.',
-        createdAt: now.subtract(const Duration(hours: 1, minutes: 20)),
-        kind: NotificationKind.system,
-        isRead: true,
-      ),
-      AppNotification(
-        id: 'n3',
-        title: 'Info',
-        message: 'Nouveau dessert disponible aujourd\'hui.',
-        createdAt: now.subtract(const Duration(hours: 3)),
-        kind: NotificationKind.info,
-        isRead: false,
-      ),
-    ];
-    _notificationCount = _all.where((n) => !n.isRead).length;
-  }
 
   @override
   Widget build(BuildContext context) {
-    final filtered = _filterList(_all, _selected);
+    final notificationService = Provider.of<NotificationService>(context);
+    final allNotifications = notificationService.notifications;
+    final unreadCount = allNotifications.where((n) => !n.isRead).length;
+    final filtered = _filterList(allNotifications, _selected);
+
     return Scaffold(
       drawer: const SessionDrawer(),
       appBar: AppBar(
@@ -91,7 +61,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 onPressed: () {},
                 tooltip: 'Notifications',
               ),
-              if (_notificationCount > 0)
+              if (unreadCount > 0)
                 Positioned(
                   right: 6,
                   top: 6,
@@ -105,7 +75,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(
-                      '$_notificationCount',
+                      '$unreadCount',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 11,
@@ -136,14 +106,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       return _NotificationTile(
                         notification: n,
                         onTap: () {
-                          setState(() {
-                            if (!n.isRead) {
-                              n.isRead = true;
-                              _notificationCount = _all
-                                  .where((x) => !x.isRead)
-                                  .length;
-                            }
-                          });
+                          notificationService.markAsRead(n);
                         },
                       );
                     },
@@ -186,16 +149,16 @@ class _NotifFilters extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
         children: [
-          _chip('Toutes', _NotifFilter.all),
-          _chip('Non lues', _NotifFilter.unread),
-          _chip('Commandes', _NotifFilter.orders),
-          _chip('Système', _NotifFilter.system),
+          _chip('Toutes', _NotifFilter.all, context),
+          _chip('Non lues', _NotifFilter.unread, context),
+          _chip('Commandes', _NotifFilter.orders, context),
+          _chip('Système', _NotifFilter.system, context),
         ],
       ),
     );
   }
 
-  Widget _chip(String label, _NotifFilter f) {
+  Widget _chip(String label, _NotifFilter f, BuildContext context) {
     final bool sel = selected == f;
     return Padding(
       padding: const EdgeInsets.only(right: 8),
@@ -203,6 +166,12 @@ class _NotifFilters extends StatelessWidget {
         label: Text(label),
         selected: sel,
         onSelected: (_) => onChanged(f),
+        selectedColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+        labelStyle: TextStyle(
+          color: sel
+              ? Theme.of(context).colorScheme.primary
+              : Theme.of(context).colorScheme.onSurface,
+        ),
       ),
     );
   }

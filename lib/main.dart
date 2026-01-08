@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'data/mock_repository.dart';
 import 'services/mock_api_service.dart';
+import 'services/notification_service.dart';
 import 'router.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const RestaurantServerApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => NotificationService(),
+      child: const RestaurantServerApp(),
+    ),
+  );
 }
 
 class RestaurantServerApp extends StatelessWidget {

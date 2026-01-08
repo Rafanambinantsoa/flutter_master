@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../data/mock_repository.dart';
 import '../models/table.dart';
 import '../services/tables_service.dart';
 import '../components/suggested_table_card.dart';
 import '../components/table_tile_card.dart';
 import '../widgets/session_drawer.dart';
+import '../services/notification_service.dart';
 
 class TablesScreen extends StatefulWidget {
   final MockRepository repo;
@@ -21,7 +23,6 @@ class _TablesScreenState extends State<TablesScreen> {
   DiningTable? _suggested;
   bool _isLoading = false;
   List<DiningTable> _availableTables = [];
-  int _notificationCount = 3;
   String? _plageHoraire; // Pour afficher la plage horaire utilisée
 
   final TablesService _tablesService = TablesService();
@@ -118,6 +119,9 @@ class _TablesScreenState extends State<TablesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final notificationService = Provider.of<NotificationService>(context);
+    final unreadCount = notificationService.notifications.where((n) => !n.isRead).length;
+
     return Scaffold(
       drawer: const SessionDrawer(),
       appBar: AppBar(
@@ -150,7 +154,7 @@ class _TablesScreenState extends State<TablesScreen> {
                     Navigator.of(context).pushNamed('/notifications'),
                 tooltip: 'Notifications',
               ),
-              if (_notificationCount > 0)
+              if (unreadCount > 0)
                 Positioned(
                   right: 6,
                   top: 6,
@@ -164,7 +168,7 @@ class _TablesScreenState extends State<TablesScreen> {
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(
-                      '$_notificationCount',
+                      '$unreadCount',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 11,
