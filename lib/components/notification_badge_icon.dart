@@ -10,9 +10,6 @@ class NotificationBadgeIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<NotificationService>(
       builder: (context, notificationService, child) {
-        print(
-          'DEBUG: Rebuilding NotificationBadgeIcon. Unread count: ${notificationService.unreadCount}',
-        ); // Debug print
         final int unreadCount = notificationService.unreadCount;
         return Stack(
           clipBehavior: Clip.none,

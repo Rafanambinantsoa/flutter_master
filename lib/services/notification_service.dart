@@ -1,5 +1,4 @@
-import 'package:flutter/foundation.dart';
-import 'package:flutter_master/screens/notifications_screen.dart';
+import 'package:flutter/material.dart'; // Import Material for ChangeNotifier
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:flutter_master/models/app_notification.dart';
@@ -32,13 +31,11 @@ class NotificationService extends ChangeNotifier {
   }
 
   Future<void> _saveNotifications() async {
-    print('DEBUG: Saving notifications to SharedPreferences.'); // Debug print
     final prefs = await SharedPreferences.getInstance();
     final notificationsJson = _notifications
         .map((n) => json.encode(n.toJson()))
         .toList();
     await prefs.setStringList(_notificationsKey, notificationsJson);
-    print('DEBUG: Notifications saved.'); // Debug print
   }
 
   void _removeExpiredNotifications() {
@@ -46,18 +43,12 @@ class NotificationService extends ChangeNotifier {
   }
 
   Future<void> addNotification(AppNotification notification) async {
-    print(
-      'DEBUG: Adding notification to _notifications list: $notification',
-    ); // Debug print
     _notifications.insert(
       0,
       notification,
     ); // Ajouter les nouvelles notifications au début
     _removeExpiredNotifications(); // Nettoyer les notifications expirées
     await _saveNotifications();
-    print(
-      'DEBUG: Notifying listeners after adding notification.',
-    ); // Debug print
     notifyListeners();
   }
 

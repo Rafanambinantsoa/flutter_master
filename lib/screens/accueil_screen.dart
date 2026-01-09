@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:flutter_master/services/notification_service.dart';
 import '../data/mock_repository.dart';
 import '../models/table.dart';
 import '../services/tables_service.dart';
@@ -120,7 +118,7 @@ class _AccueilScreenState extends State<AccueilScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final notificationService = Provider.of<NotificationService>(context);
+    // final notificationService = Provider.of<NotificationService>(context); // Removed unused variable
     return Scaffold(
       drawer: const SessionDrawer(),
       appBar: AppBar(

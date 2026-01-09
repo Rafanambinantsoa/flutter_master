@@ -1,5 +1,3 @@
-import 'package:flutter/foundation.dart';
-
 enum NotificationKind { order, system, info } // Added NotificationKind enum
 
 class AppNotification {

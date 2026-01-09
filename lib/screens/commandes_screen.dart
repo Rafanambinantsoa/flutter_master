@@ -14,7 +14,7 @@ class CommandesScreen extends StatefulWidget {
 }
 
 class _CommandesScreenState extends State<CommandesScreen> {
-  int _notificationCount = 3; // mock
+  // int _notificationCount = 3; // mock // Removed unused variable
   _Filter _selected = _Filter.all;
 
   List<Commande> _allOrders = [];
