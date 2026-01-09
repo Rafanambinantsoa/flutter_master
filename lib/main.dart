@@ -10,7 +10,6 @@ import 'router.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await PusherService().initPusher();
-  await PusherService().subscribe('commandes'); // Temporaire pour le test
   runApp(const RestaurantServerApp());
 }
 

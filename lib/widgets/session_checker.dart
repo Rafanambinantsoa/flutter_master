@@ -30,11 +30,13 @@ class _SessionCheckerState extends State<SessionChecker> {
 
   @override
   void initState() {
+    print('DEBUG SessionChecker: initState called.'); // Debug print
     super.initState();
     _notificationService = Provider.of<NotificationService>(
       context,
       listen: false,
     ); // Get from Provider
+    // _pusherService.subscribe('commandes'); // Removed
     _checkSession();
     _listenToPusherEvents();
   }
@@ -91,7 +93,9 @@ class _SessionCheckerState extends State<SessionChecker> {
 
   @override
   void dispose() {
+    print('DEBUG SessionChecker: dispose called.'); // Debug print
     _pusherSubscription?.cancel();
+    // _pusherService.unsubscribe('commandes'); // Removed
     super.dispose();
   }
 
