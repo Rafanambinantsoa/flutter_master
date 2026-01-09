@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/pusher_service.dart';
 import '../services/notification_service.dart';
+import '../services/notification_feedback_service.dart';
 
 /// Widget global qui gère les notifications Pusher de manière unique
 /// Ce widget est monté une seule fois au niveau de l'application
@@ -23,6 +24,8 @@ class PusherNotificationHandler extends StatefulWidget {
 
 class _PusherNotificationHandlerState extends State<PusherNotificationHandler> {
   NotificationService? _notificationService;
+  final NotificationFeedbackService _feedbackService =
+      NotificationFeedbackService();
 
   @override
   void didChangeDependencies() {
@@ -49,6 +52,9 @@ class _PusherNotificationHandlerState extends State<PusherNotificationHandler> {
       print(
         '📬 [PusherNotificationHandler] Réception d\'une notification: ${notification.title}',
       );
+
+      // Jouer le son de notification
+      await _feedbackService.playNotificationSound();
 
       // Ajouter la notification au service
       if (_notificationService != null) {

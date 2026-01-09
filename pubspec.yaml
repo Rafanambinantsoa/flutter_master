@@ -45,6 +45,7 @@ dependencies:
 
   pusher_channels_flutter: ^2.2.1
   uuid: ^4.3.3
+  audioplayers: ^6.0.0
 
 dev_dependencies:
   flutter_test:
@@ -73,6 +74,7 @@ flutter:
   # Assets
   assets:
     - assets/logo_app.png
+    - assets/sounds/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
