@@ -2,26 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_master/services/notification_service.dart';
 import '../widgets/session_drawer.dart';
-
-enum NotificationKind { order, system, info }
-
-class AppNotification {
-  final String id;
-  final String title;
-  final String message;
-  final DateTime createdAt;
-  final NotificationKind kind;
-  bool isRead;
-
-  AppNotification({
-    required this.id,
-    required this.title,
-    required this.message,
-    required this.createdAt,
-    required this.kind,
-    this.isRead = false,
-  });
-}
+import 'package:flutter_master/models/app_notification.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -41,6 +22,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   @override
   Widget build(BuildContext context) {
     final notificationService = Provider.of<NotificationService>(context);
+    print(
+      'DEBUG: Rebuilding NotificationsScreen. Notifications count: ${notificationService.notifications.length}, Unread: ${notificationService.unreadCount}',
+    ); // Debug print
     final allNotifications = notificationService.notifications;
     final filtered = _filterList(allNotifications, _selected);
     return Scaffold(
@@ -224,7 +208,7 @@ class _NotificationTile extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          _formatTime(notification.createdAt),
+                          _formatTime(notification.timestamp),
                           style: TextStyle(
                             color: cs.onSurfaceVariant,
                             fontSize: 12,
@@ -234,7 +218,7 @@ class _NotificationTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      notification.message,
+                      notification.body,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(color: cs.onSurfaceVariant),

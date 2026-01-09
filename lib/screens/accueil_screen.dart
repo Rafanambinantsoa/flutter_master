@@ -7,6 +7,7 @@ import '../services/tables_service.dart';
 import '../components/suggested_table_card.dart';
 import '../components/table_tile_card.dart';
 import '../widgets/session_drawer.dart';
+import '../components/notification_badge_icon.dart'; // Added
 
 class AccueilScreen extends StatefulWidget {
   final MockRepository repo;
@@ -143,40 +144,7 @@ class _AccueilScreenState extends State<AccueilScreen> {
             onPressed: _isLoading ? null : _loadAvailableTables,
             tooltip: 'Actualiser',
           ),
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.notifications_outlined),
-                onPressed: () =>
-                    Navigator.of(context).pushNamed('/notifications'),
-                tooltip: 'Notifications',
-              ),
-              if (notificationService.unreadCount > 0)
-                Positioned(
-                  right: 6,
-                  top: 6,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.redAccent,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      '${notificationService.unreadCount}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
+          NotificationBadgeIcon(), // Use the new widget here
         ],
       ),
       body: Padding(

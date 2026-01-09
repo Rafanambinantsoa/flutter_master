@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/session_drawer.dart';
+import '../components/notification_badge_icon.dart'; // Added
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -20,11 +21,7 @@ class DashboardScreen extends StatelessWidget {
         title: const Text('Dashboard'),
         centerTitle: true,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () => Navigator.of(context).pushNamed('/notifications'),
-            tooltip: 'Notifications',
-          ),
+          NotificationBadgeIcon(), // Use the new widget here
         ],
       ),
       body: SingleChildScrollView(

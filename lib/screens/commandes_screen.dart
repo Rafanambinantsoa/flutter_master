@@ -4,6 +4,7 @@ import '../models/commande.dart';
 import '../services/commande_service.dart';
 import '../utils/commande_status_extensions.dart';
 import '../widgets/session_drawer.dart';
+import '../components/notification_badge_icon.dart'; // Added
 
 class CommandesScreen extends StatefulWidget {
   const CommandesScreen({super.key});
@@ -97,40 +98,7 @@ class _CommandesScreenState extends State<CommandesScreen> {
             onPressed: _isLoading ? null : _loadCommandes,
             tooltip: 'Actualiser',
           ),
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.notifications_outlined),
-                onPressed: () =>
-                    Navigator.of(context).pushNamed('/notifications'),
-                tooltip: 'Notifications',
-              ),
-              if (_notificationCount > 0)
-                Positioned(
-                  right: 6,
-                  top: 6,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.redAccent,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      '$_notificationCount',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
+          NotificationBadgeIcon(), // Use the new widget here
         ],
       ),
       body: Column(

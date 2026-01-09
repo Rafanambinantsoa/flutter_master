@@ -3,8 +3,14 @@ import 'package:flutter/material.dart';
 class CustomDrawer extends StatelessWidget {
   final String serverName;
   final VoidCallback? onLogout;
+  final int notificationCount; // Added
 
-  const CustomDrawer({super.key, required this.serverName, this.onLogout});
+  const CustomDrawer({
+    super.key,
+    required this.serverName,
+    this.onLogout,
+    this.notificationCount = 0, // Default to 0
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +41,7 @@ class CustomDrawer extends StatelessWidget {
                       Navigator.of(context).pushReplacementNamed('/orders');
                     },
                   ),
-                  _NavTile(
+                  _NavTileWithBadge(
                     icon: Icons.notifications_outlined,
                     label: 'Notifications',
                     onTap: () {
@@ -44,6 +50,7 @@ class CustomDrawer extends StatelessWidget {
                         context,
                       ).pushReplacementNamed('/notifications');
                     },
+                    badgeCount: notificationCount, // Pass count here
                   ),
                 ],
               ),
@@ -152,6 +159,57 @@ class _NavTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       leading: Icon(icon),
+      title: Text(label),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      onTap: onTap,
+      horizontalTitleGap: 12,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+    );
+  }
+}
+
+class _NavTileWithBadge extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final int badgeCount;
+
+  const _NavTileWithBadge({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.badgeCount = 0,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Icon(icon),
+          if (badgeCount > 0)
+            Positioned(
+              right: -5,
+              top: -5,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                decoration: BoxDecoration(
+                  color: Colors.redAccent,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  badgeCount > 99 ? '99+' : '$badgeCount',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
       title: Text(label),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       onTap: onTap,
