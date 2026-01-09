@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:flutter_master/services/notification_service.dart';
 import '../data/mock_repository.dart';
 import '../models/table.dart';
 import '../services/tables_service.dart';
@@ -21,7 +23,6 @@ class _AccueilScreenState extends State<AccueilScreen> {
   DiningTable? _suggested;
   bool _isLoading = false;
   List<DiningTable> _availableTables = [];
-  int _notificationCount = 3;
   String? _plageHoraire; // Pour afficher la plage horaire utilisée
 
   final TablesService _tablesService = TablesService();
@@ -118,6 +119,7 @@ class _AccueilScreenState extends State<AccueilScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final notificationService = Provider.of<NotificationService>(context);
     return Scaffold(
       drawer: const SessionDrawer(),
       appBar: AppBar(
@@ -150,7 +152,7 @@ class _AccueilScreenState extends State<AccueilScreen> {
                     Navigator.of(context).pushNamed('/notifications'),
                 tooltip: 'Notifications',
               ),
-              if (_notificationCount > 0)
+              if (notificationService.unreadCount > 0)
                 Positioned(
                   right: 6,
                   top: 6,
@@ -164,7 +166,7 @@ class _AccueilScreenState extends State<AccueilScreen> {
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(
-                      '$_notificationCount',
+                      '${notificationService.unreadCount}',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 11,

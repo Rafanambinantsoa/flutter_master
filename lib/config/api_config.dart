@@ -12,4 +12,6 @@ class ApiConfig {
 
   /// Durée de vie du token (1 heure)
   static const Duration tokenLifetime = Duration(hours: 1);
+  static const String pusherApiKey = '64847502664fa3c1a5d6';
+  static const String pusherCluster = 'mt1';
 }
