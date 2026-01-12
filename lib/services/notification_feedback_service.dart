@@ -1,6 +1,7 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/services.dart';
 import 'package:haptic_feedback/haptic_feedback.dart';
+import 'dart:async';
 
 /// Service pour gérer les retours sonores et haptiques lors des notifications
 class NotificationFeedbackService {
@@ -55,8 +56,10 @@ class NotificationFeedbackService {
     }
   }
 
-  /// Active la vibration haptique pour une notification
-  /// Utilise haptic_feedback avec support Android 13+
+  /// Active la vibration haptique pour une notification avec pattern personnalisé
+  /// Pattern : 3 secondes vibration → 1 seconde pause → 3 secondes vibration
+  /// Utilise plusieurs appels HapticsType.heavy pour simuler une vibration continue
+  /// Intensité maximale avec HapticsType.heavy
   Future<void> playNotificationVibration() async {
     try {
       // Vérifier si l'appareil peut vibrer
@@ -66,16 +69,54 @@ class NotificationFeedbackService {
         return;
       }
 
-      // Utiliser HapticsType.success pour les notifications réussies
-      // Avec support Android 13+ : HapticsUsage.notification
-      await Haptics.vibrate(
-        HapticsType.success,
-        useAndroidHapticConstants: false, // Utiliser les primitives personnalisées alignées iOS
-        usage: HapticsUsage.notification, // Pour Android 13+ : indiquer que c'est une notification
+      print('📳 [NotificationFeedback] Début du pattern de vibration (3s → 1s pause → 3s)');
+
+      // Première vibration de 3 secondes
+      // Répéter HapticsType.heavy toutes les 200ms pour maintenir une vibration continue
+      await _vibrateForDuration(
+        duration: const Duration(seconds: 3),
+        hapticsType: HapticsType.heavy,
       );
-      print('📳 [NotificationFeedback] Vibration haptique activée (success)');
+
+      // Pause de 1 seconde
+      await Future.delayed(const Duration(seconds: 1));
+      print('📳 [NotificationFeedback] Pause de 1 seconde');
+
+      // Deuxième vibration de 3 secondes
+      await _vibrateForDuration(
+        duration: const Duration(seconds: 3),
+        hapticsType: HapticsType.heavy,
+      );
+
+      print('📳 [NotificationFeedback] Pattern de vibration terminé');
     } catch (e) {
       print('❌ [NotificationFeedback] Erreur lors de la vibration: $e');
+    }
+  }
+
+  /// Fait vibrer pendant une durée spécifiée en répétant des vibrations haptiques
+  /// Utilise HapticsType.heavy pour une intensité maximale
+  /// Répète toutes les 200ms pour maintenir une vibration continue
+  Future<void> _vibrateForDuration({
+    required Duration duration,
+    required HapticsType hapticsType,
+  }) async {
+    final startTime = DateTime.now();
+    const vibrationInterval = Duration(milliseconds: 200); // Répéter toutes les 200ms
+
+    while (DateTime.now().difference(startTime) < duration) {
+      try {
+        await Haptics.vibrate(
+          hapticsType,
+          useAndroidHapticConstants: false,
+          usage: HapticsUsage.notification,
+        );
+      } catch (e) {
+        print('⚠️ [NotificationFeedback] Erreur lors d\'une vibration: $e');
+      }
+
+      // Attendre avant la prochaine vibration
+      await Future.delayed(vibrationInterval);
     }
   }
 
