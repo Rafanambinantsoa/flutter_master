@@ -312,6 +312,7 @@ class CreateCommandeRequest {
   final List<int> tablesIds;
   final List<int> menuIds;
   final List<int> quantities;
+  final int userId;
 
   CreateCommandeRequest({
     required this.reservationId,
@@ -326,6 +327,7 @@ class CreateCommandeRequest {
     required this.tablesIds,
     required this.menuIds,
     required this.quantities,
+    required this.userId,
   });
 
   Map<String, dynamic> toJson() {
@@ -342,6 +344,7 @@ class CreateCommandeRequest {
       'tablesIds': tablesIds,
       'menuIds': menuIds,
       'quantities': quantities,
+      'user_id': userId,
     };
   }
 }

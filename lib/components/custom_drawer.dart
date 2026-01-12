@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:flutter_master/services/notification_service.dart';
 
 class CustomDrawer extends StatelessWidget {
   final String serverName;
@@ -45,6 +47,15 @@ class CustomDrawer extends StatelessWidget {
                     icon: Icons.notifications_outlined,
                     label: 'Notifications',
                     onTap: () {
+                      // Marquer toutes les notifications comme lues avant de naviguer
+                      final notificationService =
+                          Provider.of<NotificationService>(context, listen: false);
+                      if (notificationService.unreadCount > 0) {
+                        notificationService.markAllAsRead();
+                        print(
+                          '✅ [CustomDrawer] Toutes les notifications marquées comme lues',
+                        );
+                      }
                       Navigator.pop(context);
                       Navigator.of(
                         context,

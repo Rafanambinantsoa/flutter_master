@@ -13,20 +13,57 @@ class NotificationsScreen extends StatefulWidget {
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
   _NotifFilter _selected = _NotifFilter.all;
+  final ScrollController _scrollController = ScrollController();
+  int _previousNotificationCount = 0;
 
   @override
   void initState() {
     super.initState();
+    // Marquer toutes les notifications comme lues quand l'écran s'ouvre
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final notificationService = Provider.of<NotificationService>(
+        context,
+        listen: false,
+      );
+      // Vérifier s'il y a des notifications non lues avant de marquer
+      if (notificationService.unreadCount > 0) {
+        notificationService.markAllAsRead();
+        print(
+          '✅ [NotificationsScreen] Toutes les notifications marquées comme lues',
+        );
+      }
+      _previousNotificationCount = notificationService.notifications.length;
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final notificationService = Provider.of<NotificationService>(context);
-    print(
-      'DEBUG: Rebuilding NotificationsScreen. Notifications count: ${notificationService.notifications.length}, Unread: ${notificationService.unreadCount}',
-    ); // Debug print
     final allNotifications = notificationService.notifications;
     final filtered = _filterList(allNotifications, _selected);
+
+    // Détecter une nouvelle notification et scroller vers le haut
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final currentCount = allNotifications.length;
+      if (currentCount > _previousNotificationCount &&
+          _selected == _NotifFilter.all &&
+          _scrollController.hasClients) {
+        // Une nouvelle notification a été ajoutée, scroller vers le haut
+        _scrollController.animateTo(
+          0,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+      _previousNotificationCount = currentCount;
+    });
+
     return Scaffold(
       drawer: const SessionDrawer(),
       appBar: AppBar(
@@ -40,6 +77,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         title: const Text('Notifications'),
         centerTitle: true,
         actions: [
+          if (notificationService.notifications.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.delete_outline),
+              onPressed: () =>
+                  _showDeleteAllDialog(context, notificationService),
+              tooltip: 'Supprimer toutes les notifications',
+            ),
           Stack(
             clipBehavior: Clip.none,
             children: [
@@ -85,12 +129,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             child: filtered.isEmpty
                 ? _EmptyState()
                 : ListView.separated(
+                    controller: _scrollController,
+                    key: ValueKey('notifications_${filtered.length}'),
                     padding: const EdgeInsets.all(16),
                     itemCount: filtered.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 10),
                     itemBuilder: (context, index) {
                       final n = filtered[index];
                       return _NotificationTile(
+                        key: ValueKey(n.id),
                         notification: n,
                         onTap: () {
                           notificationService.markAsRead(n.id);
@@ -117,6 +164,46 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         return list.where((n) => n.kind == NotificationKind.system).toList();
       case _NotifFilter.orders:
         return list.where((n) => n.kind == NotificationKind.order).toList();
+    }
+  }
+
+  Future<void> _showDeleteAllDialog(
+    BuildContext context,
+    NotificationService notificationService,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Supprimer toutes les notifications'),
+        content: const Text(
+          'Êtes-vous sûr de vouloir supprimer toutes les notifications ? Cette action est irréversible.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: const Text('Supprimer'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await notificationService.clearAllNotifications();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Toutes les notifications ont été supprimées'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
     }
   }
 }
@@ -162,7 +249,11 @@ class _NotificationTile extends StatelessWidget {
   final AppNotification notification;
   final VoidCallback onTap;
 
-  const _NotificationTile({required this.notification, required this.onTap});
+  const _NotificationTile({
+    super.key,
+    required this.notification,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {

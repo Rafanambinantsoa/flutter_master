@@ -81,6 +81,8 @@ class CommandeService {
 
       final responseData = jsonDecode(response.body) as Map<String, dynamic>;
 
+      print('DEBUG: Response data: $responseData');
+
       if (response.statusCode != 200 && response.statusCode != 201) {
         final message =
             responseData['message'] as String? ??

@@ -8,6 +8,7 @@ import '../models/client_info.dart';
 import '../services/menu_service.dart';
 import '../services/commande_service.dart';
 import '../models/commande.dart';
+import '../services/session_service.dart';
 
 class CartModel extends ChangeNotifier {
   final MockRepository repo;
@@ -546,12 +547,12 @@ class _MenuCard extends StatelessWidget {
                         children: [
                           Expanded(
                             child: Text(
-                        item.name,
+                              item.name,
                               style: const TextStyle(
                                 fontWeight: FontWeight.w700,
                               ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           Text(
@@ -657,6 +658,7 @@ class CartScreen extends StatefulWidget {
 
 class _CartScreenState extends State<CartScreen> {
   final CommandeService _commandeService = CommandeService();
+  final SessionService _sessionService = SessionService();
   bool _isSubmitting = false;
 
   DateTime _roundToNextHalfHour(DateTime dateTime) {
@@ -761,6 +763,12 @@ class _CartScreenState extends State<CartScreen> {
           ? int.tryParse(widget.reservation!.id) ?? 0
           : 0;
 
+      // Récupérer l'ID de l'utilisateur connecté
+      final userId = await _sessionService.getUserId();
+      if (userId == null) {
+        throw Exception('Utilisateur non connecté');
+      }
+
       // Créer la requête
       final request = CreateCommandeRequest(
         reservationId: reservationId,
@@ -775,6 +783,7 @@ class _CartScreenState extends State<CartScreen> {
         tablesIds: tablesIds,
         menuIds: menuIds,
         quantities: quantities,
+        userId: userId,
       );
 
       // Appeler l'API
@@ -944,9 +953,9 @@ class _CartScreenState extends State<CartScreen> {
                   ],
                 ),
                 child: SafeArea(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -980,7 +989,7 @@ class _CartScreenState extends State<CartScreen> {
                             style: Theme.of(context).textTheme.titleLarge
                                 ?.copyWith(fontWeight: FontWeight.w700),
                           ),
-                    Text(
+                          Text(
                             '${widget.cart.total.toStringAsFixed(0)} Ar',
                             style: Theme.of(context).textTheme.titleLarge
                                 ?.copyWith(
@@ -991,7 +1000,7 @@ class _CartScreenState extends State<CartScreen> {
                         ],
                       ),
                       const SizedBox(height: 16),
-                    FilledButton(
+                      FilledButton(
                         onPressed: _isSubmitting ? null : _submitCommande,
                         style: FilledButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),

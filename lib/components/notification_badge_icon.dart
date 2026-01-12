@@ -16,9 +16,15 @@ class NotificationBadgeIcon extends StatelessWidget {
           children: [
             IconButton(
               icon: const Icon(Icons.notifications_outlined),
-              onPressed:
-                  onPressed ??
+              onPressed: onPressed ??
                   () {
+                    // Marquer toutes les notifications comme lues avant de naviguer
+                    if (notificationService.unreadCount > 0) {
+                      notificationService.markAllAsRead();
+                      print(
+                        '✅ [NotificationBadgeIcon] Toutes les notifications marquées comme lues',
+                      );
+                    }
                     Navigator.of(context).pushNamed('/notifications');
                   },
               tooltip: 'Notifications',
