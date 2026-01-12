@@ -46,6 +46,7 @@ dependencies:
   pusher_channels_flutter: ^2.2.1
   uuid: ^4.3.3
   audioplayers: ^6.0.0
+  haptic_feedback: ^0.6.4+3
 
 dev_dependencies:
   flutter_test:

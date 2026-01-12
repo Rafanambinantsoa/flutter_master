@@ -1,4 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Permission pour la vibration -->
+    <uses-permission android:name="android.permission.VIBRATE"/>
+
     <application
         android:label="Restaurant OS"
         android:name="${applicationName}"

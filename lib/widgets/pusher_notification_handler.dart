@@ -53,8 +53,11 @@ class _PusherNotificationHandlerState extends State<PusherNotificationHandler> {
         '📬 [PusherNotificationHandler] Réception d\'une notification: ${notification.title}',
       );
 
-      // Jouer le son de notification
-      await _feedbackService.playNotificationSound();
+      // Jouer le son ET la vibration pour la notification
+      await _feedbackService.playNotificationFeedback(
+        playSound: true,
+        vibrate: true,
+      );
 
       // Ajouter la notification au service
       if (_notificationService != null) {
