@@ -30,6 +30,8 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    final bool keyboardOpen = bottomInset > 0;
 
     return Scaffold(
       body: Container(
@@ -46,34 +48,38 @@ class _LoginScreenState extends State<LoginScreen> {
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
+              // Pas de scroll "inutile" quand le clavier est fermé.
+              physics: keyboardOpen
+                  ? const ClampingScrollPhysics()
+                  : const NeverScrollableScrollPhysics(),
+              padding: EdgeInsets.only(
+                left: 24,
+                right: 24,
+                top: 24,
+                bottom: 24 + bottomInset,
+              ),
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 400),
+                constraints: const BoxConstraints(maxWidth: 420),
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisAlignment: keyboardOpen
+                      ? MainAxisAlignment.start
+                      : MainAxisAlignment.center,
                   children: [
                     // Logo/Icon Section
                     Container(
-                      width: 120,
-                      height: 120,
+                      width: 78,
+                      height: 78,
                       decoration: BoxDecoration(
                         color: cs.primary,
-                        borderRadius: BorderRadius.circular(24),
-                        boxShadow: [
-                          BoxShadow(
-                            color: cs.primary.withOpacity(0.3),
-                            blurRadius: 20,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
+                        borderRadius: BorderRadius.circular(18),
                       ),
                       child: Icon(
                         Icons.restaurant_menu,
-                        size: 60,
+                        size: 40,
                         color: cs.onPrimary,
                       ),
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 18),
 
                     // Title
                     Text(
@@ -82,26 +88,28 @@ class _LoginScreenState extends State<LoginScreen> {
                           ?.copyWith(
                             fontWeight: FontWeight.w800,
                             color: cs.onSurface,
+                            fontSize: 26,
                           ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     Text(
                       'Connectez-vous pour accéder au système',
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         color: cs.onSurfaceVariant,
+                        fontSize: 14,
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 48),
+                    const SizedBox(height: 22),
 
                     // Login Form
                     Card(
-                      elevation: 8,
+                      elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Container(
-                        padding: const EdgeInsets.all(32),
+                        padding: const EdgeInsets.all(24),
                         decoration: BoxDecoration(
                           color: cs.surface,
                           borderRadius: BorderRadius.circular(20),
@@ -122,6 +130,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                 decoration: InputDecoration(
                                   labelText: 'Email',
                                   hintText: 'Entrez votre email',
+                                  isDense: true,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                    horizontal: 12,
+                                  ),
                                   prefixIcon: Icon(
                                     Icons.email_outlined,
                                     color: cs.primary,
@@ -154,7 +167,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   return null;
                                 },
                               ),
-                              const SizedBox(height: 20),
+                              const SizedBox(height: 12),
 
                               // Password Field
                               TextFormField(
@@ -163,6 +176,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                 decoration: InputDecoration(
                                   labelText: 'Mot de passe',
                                   hintText: 'Entrez votre mot de passe',
+                                  isDense: true,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                    horizontal: 12,
+                                  ),
                                   prefixIcon: Icon(
                                     Icons.lock_outline,
                                     color: cs.primary,
@@ -208,7 +226,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   return null;
                                 },
                               ),
-                              const SizedBox(height: 32),
+                              const SizedBox(height: 18),
 
                               // Login Button
                               FilledButton(
@@ -217,12 +235,12 @@ class _LoginScreenState extends State<LoginScreen> {
                                   backgroundColor: cs.primary,
                                   foregroundColor: cs.onPrimary,
                                   padding: const EdgeInsets.symmetric(
-                                    vertical: 16,
+                                    vertical: 13,
                                   ),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                  elevation: 2,
+                                  elevation: 0,
                                 ),
                                 child: _isLoading
                                     ? SizedBox(
@@ -232,32 +250,32 @@ class _LoginScreenState extends State<LoginScreen> {
                                           strokeWidth: 2,
                                           valueColor:
                                               AlwaysStoppedAnimation<Color>(
-                                                cs.onPrimary,
-                                              ),
+                                            cs.onPrimary,
+                                          ),
                                         ),
                                       )
                                     : const Text(
                                         'Se connecter',
                                         style: TextStyle(
-                                          fontSize: 16,
+                                          fontSize: 14,
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
                               ),
-                              const SizedBox(height: 16),
+                              const SizedBox(height: 12),
                             ],
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 18),
 
                     // Footer
                     Text(
-                      '© 2024 Restaurant Master',
+                      '© ${DateTime.now().year} Restaurant Master',
                       style: TextStyle(
-                        fontSize: 12,
-                        color: cs.onSurfaceVariant.withOpacity(0.7),
+                        fontSize: 11,
+                        color: cs.onSurfaceVariant.withOpacity(0.65),
                       ),
                     ),
                   ],
