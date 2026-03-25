@@ -128,6 +128,8 @@ class _MenuSelectionScreenState extends State<MenuSelectionScreen> {
                     color: cs.onPrimary,
                     fontWeight: FontWeight.w700,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ),
@@ -194,13 +196,16 @@ class _MenuSelectionScreenState extends State<MenuSelectionScreen> {
                   )
                 : GridView.builder(
                     padding: const EdgeInsets.all(12),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                          childAspectRatio: 0.7,
-                        ),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                      // Version compacte sur écrans très étroits pour éviter
+                      // les overflows dans la carte (surtout quand isSelected=true).
+                      childAspectRatio: MediaQuery.of(context).size.width < 360
+                          ? 0.62
+                          : 0.7,
+                    ),
                     itemCount: filtered.length,
                     itemBuilder: (context, index) {
                       final item = filtered[index];
@@ -252,6 +257,8 @@ class _MenuSelectionScreenState extends State<MenuSelectionScreen> {
                                 fontWeight: FontWeight.w700,
                                 color: cs.primary,
                               ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),
@@ -373,6 +380,8 @@ class _MenuSelectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final bool compact = MediaQuery.of(context).size.width < 360;
+
     return Card(
       elevation: isSelected ? 4 : 2,
       clipBehavior: Clip.antiAlias,
@@ -391,57 +400,61 @@ class _MenuSelectionCard extends StatelessWidget {
             Stack(
               children: [
                 AspectRatio(
-                  aspectRatio: 16 / 10,
+                  // En compact, on rend l'image un peu plus courte.
+                  aspectRatio: compact ? 16 / 9 : 16 / 10,
                   child: item.imageUrl != null
                       ? Image.network(item.imageUrl!, fit: BoxFit.cover)
                       : Container(color: cs.surfaceVariant),
                 ),
                 if (isSelected)
                   Positioned(
-                    top: 8,
-                    right: 8,
+                    top: compact ? 6 : 8,
+                    right: compact ? 6 : 8,
                     child: Container(
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
                         color: cs.primary,
                         shape: BoxShape.circle,
                       ),
-                      child: Icon(Icons.check, color: cs.onPrimary, size: 16),
+                      child: Icon(
+                        Icons.check,
+                        color: cs.onPrimary,
+                        size: compact ? 14 : 16,
+                      ),
                     ),
                   ),
               ],
             ),
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(compact ? 10 : 12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     item.name,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w700,
-                      fontSize: 14,
+                      fontSize: compact ? 13 : 14,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: compact ? 3 : 4),
                   Text(
                     '${item.price.toStringAsFixed(0)} Ar',
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                       color: cs.primary,
-                      fontSize: 13,
+                      fontSize: compact ? 12 : 13,
                     ),
                   ),
                   if (isSelected) ...[
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 4,
-                      runSpacing: 4,
-                      alignment: WrapAlignment.start,
+                    SizedBox(height: compact ? 6 : 8),
+                    // On force une seule ligne pour éviter les overflows verticaux.
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        // Bouton pour retirer de la sélection
                         InkWell(
                           onTap: () => onQuantityChanged(0),
                           borderRadius: BorderRadius.circular(16),
@@ -450,11 +463,10 @@ class _MenuSelectionCard extends StatelessWidget {
                             child: Icon(
                               Icons.remove_circle,
                               color: cs.error,
-                              size: 20,
+                              size: compact ? 18 : 20,
                             ),
                           ),
                         ),
-                        // Contrôles quantité
                         InkWell(
                           onTap: quantity > 1
                               ? () => onQuantityChanged(quantity - 1)
@@ -464,28 +476,31 @@ class _MenuSelectionCard extends StatelessWidget {
                             padding: const EdgeInsets.all(4),
                             child: Icon(
                               Icons.remove_circle_outline,
-                              size: 18,
+                              size: compact ? 16 : 18,
                               color: quantity > 1 ? null : Colors.grey,
                             ),
                           ),
                         ),
                         SizedBox(
-                          width: 24,
+                          width: compact ? 20 : 24,
                           child: Text(
                             '$quantity',
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.w700,
-                              fontSize: 13,
+                              fontSize: compact ? 12 : 13,
                             ),
                           ),
                         ),
                         InkWell(
                           onTap: () => onQuantityChanged(quantity + 1),
                           borderRadius: BorderRadius.circular(16),
-                          child: const Padding(
-                            padding: EdgeInsets.all(4),
-                            child: Icon(Icons.add_circle_outline, size: 18),
+                          child: Padding(
+                            padding: const EdgeInsets.all(4),
+                            child: Icon(
+                              Icons.add_circle_outline,
+                              size: compact ? 16 : 18,
+                            ),
                           ),
                         ),
                       ],

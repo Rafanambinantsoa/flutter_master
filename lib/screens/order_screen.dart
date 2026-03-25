@@ -138,7 +138,11 @@ class _OrderScreenState extends State<OrderScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Commande - Table ${widget.table.number}'),
+            Text(
+              'Commande - Table ${widget.table.number}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
             if (isPrepaid)
               Text(
                 'Menu prépayé',
@@ -147,6 +151,8 @@ class _OrderScreenState extends State<OrderScreen> {
                   fontWeight: FontWeight.normal,
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             if (hasClientInfo && !isPrepaid)
               Text(
@@ -156,6 +162,8 @@ class _OrderScreenState extends State<OrderScreen> {
                   fontWeight: FontWeight.normal,
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
           ],
         ),
@@ -314,7 +322,12 @@ class _OrderScreenState extends State<OrderScreen> {
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final crossAxisCount = constraints.maxWidth < 700 ? 2 : 3;
-                final childAspect = crossAxisCount == 2 ? 0.7 : 0.65;
+                final bool isVeryNarrow = constraints.maxWidth < 420;
+                // Si l'écran est très étroit, on augmente légèrement la hauteur
+                // des tuiles (childAspectRatio plus petit) pour éviter
+                // les RenderFlex overflowed sur le contenu.
+                final childAspect =
+                    crossAxisCount == 2 ? (isVeryNarrow ? 0.62 : 0.7) : 0.65;
                 if (_isLoadingMenu) {
                   return const Center(child: CircularProgressIndicator());
                 }
@@ -531,13 +544,15 @@ class _MenuCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 AspectRatio(
-                  aspectRatio: isCompact ? 16 / 9 : 16 / 10,
+                  // En mode compact, on réduit un peu la hauteur globale
+                  // de la tuile pour éviter un overflow sub-pixel en bas.
+                  aspectRatio: isCompact ? 16 / 8.5 : 16 / 10,
                   child: item.imageUrl != null
                       ? Image.network(item.imageUrl!, fit: BoxFit.cover)
                       : Container(color: cs.surfaceVariant),
                 ),
                 Padding(
-                  padding: EdgeInsets.all(isCompact ? 8 : 12),
+                  padding: EdgeInsets.all(isCompact ? 6 : 10),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -565,19 +580,19 @@ class _MenuCard extends StatelessWidget {
                           ),
                         ],
                       ),
-                      SizedBox(height: isCompact ? 2 : 6),
+                      SizedBox(height: isCompact ? 0 : 4),
                       Text(
                         item.description ?? 'Délicieux et préparé à la minute.',
                         maxLines: isCompact ? 1 : 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(color: cs.onSurfaceVariant),
                       ),
-                      SizedBox(height: isCompact ? 6 : 10),
+                      SizedBox(height: isCompact ? 2 : 6),
                       Wrap(
                         alignment: WrapAlignment.start,
                         crossAxisAlignment: WrapCrossAlignment.center,
-                        spacing: 8,
-                        runSpacing: 6,
+                        spacing: 5,
+                        runSpacing: isCompact ? 2 : 4,
                         children: [
                           _tag(item.category.name),
                           _tag(
@@ -585,30 +600,39 @@ class _MenuCard extends StatelessWidget {
                                 ? 'chaud'
                                 : 'froid',
                           ),
-                          SizedBox(
-                            width: isCompact ? double.infinity : null,
-                            child: FilledButton(
-                              onPressed: () {
-                                cart.add(item);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      '${item.name} ajouté au panier',
-                                    ),
-                                    behavior: SnackBarBehavior.floating,
-                                    margin: const EdgeInsets.only(
-                                      bottom: 24,
-                                      left: 24,
-                                      right: 24,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    duration: const Duration(seconds: 2),
+                          FilledButton(
+                            style: FilledButton.styleFrom(
+                              padding: EdgeInsets.symmetric(
+                                vertical: isCompact ? 8 : 10,
+                                horizontal: isCompact ? 10 : 14,
+                              ),
+                            ),
+                            onPressed: () {
+                              cart.add(item);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    '${item.name} ajouté au panier',
                                   ),
-                                );
-                              },
-                              child: const Text('Ajouter'),
+                                  behavior: SnackBarBehavior.floating,
+                                  margin: const EdgeInsets.only(
+                                    bottom: 24,
+                                    left: 24,
+                                    right: 24,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  duration: const Duration(seconds: 2),
+                                ),
+                              );
+                            },
+                            child: Text(
+                              'Ajouter',
+                              style: TextStyle(
+                                fontSize: isCompact ? 13 : 14,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ],
@@ -876,7 +900,11 @@ class _CartScreenState extends State<CartScreen> {
                           final lineTotal = line.total;
                           return Card(
                             child: ListTile(
-                              title: Text(line.item.name),
+                              title: Text(
+                                line.item.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                               subtitle: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -888,6 +916,8 @@ class _CartScreenState extends State<CartScreen> {
                                         context,
                                       ).colorScheme.onSurfaceVariant,
                                     ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                   Text(
                                     'Sous-total: ${lineTotal.toStringAsFixed(0)} Ar',
@@ -898,6 +928,8 @@ class _CartScreenState extends State<CartScreen> {
                                         context,
                                       ).colorScheme.primary,
                                     ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ],
                               ),
@@ -967,6 +999,8 @@ class _CartScreenState extends State<CartScreen> {
                                 context,
                               ).colorScheme.onSurfaceVariant,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                           Text(
                             '${widget.cart.itemCount}',
@@ -977,6 +1011,8 @@ class _CartScreenState extends State<CartScreen> {
                                 context,
                               ).colorScheme.onSurfaceVariant,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ),
@@ -988,6 +1024,8 @@ class _CartScreenState extends State<CartScreen> {
                             'Total:',
                             style: Theme.of(context).textTheme.titleLarge
                                 ?.copyWith(fontWeight: FontWeight.w700),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                           Text(
                             '${widget.cart.total.toStringAsFixed(0)} Ar',
@@ -996,6 +1034,8 @@ class _CartScreenState extends State<CartScreen> {
                                   fontWeight: FontWeight.w700,
                                   color: Theme.of(context).colorScheme.primary,
                                 ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ),

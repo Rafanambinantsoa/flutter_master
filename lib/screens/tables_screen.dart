@@ -149,21 +149,45 @@ class _TablesScreenState extends State<TablesScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final bool isNarrow = constraints.maxWidth < 360;
+
+                final title = Text(
                   'Tables disponibles',
                   style: Theme.of(context).textTheme.titleLarge,
-                ),
-                OutlinedButton.icon(
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                );
+
+                final button = OutlinedButton.icon(
                   onPressed: () {
                     Navigator.of(context).pushNamed('/client-selection');
                   },
                   icon: const Icon(Icons.person_add),
                   label: const Text('Nouveau client'),
-                ),
-              ],
+                );
+
+                if (isNarrow) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      title,
+                      const SizedBox(height: 10),
+                      button,
+                    ],
+                  );
+                }
+
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Flexible(child: title),
+                    const SizedBox(width: 12),
+                    button,
+                  ],
+                );
+              },
             ),
             const SizedBox(height: 16),
             // Section pour suggérer une table
@@ -180,33 +204,80 @@ class _TablesScreenState extends State<TablesScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        const Text('Personnes:'),
-                        const SizedBox(width: 8),
-                        SizedBox(
-                          width: 80,
-                          child: TextField(
-                            controller: _peopleCtrl,
-                            keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(
-                              border: OutlineInputBorder(),
-                              isDense: true,
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final isNarrow = constraints.maxWidth < 360;
+
+                        if (isNarrow) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Row(
+                                children: [
+                                  const Text('Personnes:'),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: TextField(
+                                      controller: _peopleCtrl,
+                                      keyboardType: TextInputType.number,
+                                      decoration: const InputDecoration(
+                                        border: OutlineInputBorder(),
+                                        isDense: true,
+                                      ),
+                                      onChanged: (value) {
+                                        final parsed = int.tryParse(value);
+                                        if (parsed != null && parsed > 0) {
+                                          setState(() => _people = parsed);
+                                        }
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              FilledButton(
+                                onPressed: _isLoading ? null : _suggestTable,
+                                child: const Text('Proposer table'),
+                              ),
+                            ],
+                          );
+                        }
+
+                        return Row(
+                          children: [
+                            const Text('Personnes:'),
+                            const SizedBox(width: 8),
+                            SizedBox(
+                              width: 120,
+                              child: TextField(
+                                controller: _peopleCtrl,
+                                keyboardType: TextInputType.number,
+                                decoration: const InputDecoration(
+                                  border: OutlineInputBorder(),
+                                  isDense: true,
+                                ),
+                                onChanged: (value) {
+                                  final parsed = int.tryParse(value);
+                                  if (parsed != null && parsed > 0) {
+                                    setState(() => _people = parsed);
+                                  }
+                                },
+                              ),
                             ),
-                            onChanged: (value) {
-                              final parsed = int.tryParse(value);
-                              if (parsed != null && parsed > 0) {
-                                setState(() => _people = parsed);
-                              }
-                            },
-                          ),
-                        ),
-                        const Spacer(),
-                        FilledButton(
-                          onPressed: _isLoading ? null : _suggestTable,
-                          child: const Text('Proposer table'),
-                        ),
-                      ],
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Align(
+                                alignment: Alignment.centerRight,
+                                child: FilledButton(
+                                  onPressed:
+                                      _isLoading ? null : _suggestTable,
+                                  child: const Text('Proposer table'),
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   ],
                 ),

@@ -92,46 +92,55 @@ class DashboardScreen extends StatelessWidget {
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 12),
-            GridView.count(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 1.5,
-              children: [
-                _ActionCard(
-                  title: 'Commandes',
-                  icon: Icons.receipt_long,
-                  color: cs.primaryContainer,
-                  onTap: () => Navigator.of(context).pushNamed('/orders'),
-                ),
-                _ActionCard(
-                  title: 'Tables',
-                  icon: Icons.table_restaurant,
-                  color: cs.secondaryContainer,
-                  onTap: () => Navigator.of(context).pushNamed('/tables'),
-                ),
-                _ActionCard(
-                  title: 'Notifications',
-                  icon: Icons.notifications,
-                  color: cs.tertiaryContainer,
-                  onTap: () =>
-                      Navigator.of(context).pushNamed('/notifications'),
-                ),
-                _ActionCard(
-                  title: 'Réservations',
-                  icon: Icons.event,
-                  color: cs.errorContainer,
-                  onTap: () {
-                    // Navigation vers la recherche de réservation
-                    Navigator.of(context).pushNamed(
-                      '/reservation-lookup',
-                      arguments: {'type': null},
-                    );
-                  },
-                ),
-              ],
+            LayoutBuilder(
+              builder: (context, constraints) {
+                // Sur petits écrans, on donne un peu plus de hauteur aux cellules
+                // pour éviter les overflows dus à la combinaison padding + texte.
+                final bool isNarrow = constraints.maxWidth < 380;
+                final double childAspectRatio = isNarrow ? 1.35 : 1.5;
+
+                return GridView.count(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: childAspectRatio,
+                  children: [
+                    _ActionCard(
+                      title: 'Commandes',
+                      icon: Icons.receipt_long,
+                      color: cs.primaryContainer,
+                      onTap: () => Navigator.of(context).pushNamed('/orders'),
+                    ),
+                    _ActionCard(
+                      title: 'Tables',
+                      icon: Icons.table_restaurant,
+                      color: cs.secondaryContainer,
+                      onTap: () => Navigator.of(context).pushNamed('/tables'),
+                    ),
+                    _ActionCard(
+                      title: 'Notifications',
+                      icon: Icons.notifications,
+                      color: cs.tertiaryContainer,
+                      onTap: () =>
+                          Navigator.of(context).pushNamed('/notifications'),
+                    ),
+                    _ActionCard(
+                      title: 'Réservations',
+                      icon: Icons.event,
+                      color: cs.errorContainer,
+                      onTap: () {
+                        // Navigation vers la recherche de réservation
+                        Navigator.of(context).pushNamed(
+                          '/reservation-lookup',
+                          arguments: {'type': null},
+                        );
+                      },
+                    ),
+                  ],
+                );
+              },
             ),
           ],
         ),
@@ -161,11 +170,12 @@ class _ActionCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          // Un peu moins de padding => plus de place verticale => pas d'overflow.
+          padding: const EdgeInsets.all(12),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 32, color: color),
+              Icon(icon, size: 30, color: color),
               const SizedBox(height: 8),
               Text(
                 title,
@@ -173,6 +183,8 @@ class _ActionCard extends StatelessWidget {
                   context,
                 ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
                 textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),

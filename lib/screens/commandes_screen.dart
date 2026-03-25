@@ -4,7 +4,8 @@ import '../models/commande.dart';
 import '../services/commande_service.dart';
 import '../utils/commande_status_extensions.dart';
 import '../widgets/session_drawer.dart';
-import '../components/notification_badge_icon.dart'; // Added
+import '../components/notification_badge_icon.dart';
+import '../services/session_service.dart';
 
 class CommandesScreen extends StatefulWidget {
   const CommandesScreen({super.key});
@@ -21,12 +22,30 @@ class _CommandesScreenState extends State<CommandesScreen> {
   bool _isLoading = true;
   String? _errorMessage;
   final CommandeService _commandeService = CommandeService();
+  final SessionService _sessionService = SessionService();
 
   @override
   void initState() {
     super.initState();
     _loadCommandes();
   }
+
+  // Rafraîchir la liste quand on revient sur l'écran
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Ne rafraîchir qu'une seule fois après le premier build
+    if (!_hasRefreshed) {
+      _hasRefreshed = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !_isLoading) {
+          _loadCommandes();
+        }
+      });
+    }
+  }
+  
+  bool _hasRefreshed = false;
 
   Future<void> _loadCommandes() async {
     setState(() {
@@ -35,16 +54,36 @@ class _CommandesScreenState extends State<CommandesScreen> {
     });
 
     try {
+      // Récupérer l'ID de l'utilisateur connecté
+      final currentUserId = await _sessionService.getUserId();
+      if (currentUserId == null) {
+        throw Exception('Utilisateur non connecté');
+      }
+
       final commandes = await _commandeService.getCommandes();
+      print('DEBUG: Commandes chargées avec succès: ${commandes.length}');
+      print('DEBUG: UserId connecté: $currentUserId');
+      
+      // Filtrer pour ne garder que les commandes de l'utilisateur connecté
+      final myCommandes = commandes.where((cmd) {
+        final cmdUserId = cmd.userId;
+        print('DEBUG: Commande ${cmd.reference} - userId: $cmdUserId');
+        // Certains backends omettent temporairement user_id dans la liste.
+        // On garde ces commandes pour éviter une liste vide côté UI.
+        return cmdUserId == null || cmdUserId == currentUserId;
+      }).toList();
+      
+      print('DEBUG: Commandes filtrées (mes commandes): ${myCommandes.length}');
+      
       setState(() {
-        _allOrders = commandes;
+        _allOrders = myCommandes;
         _isLoading = false;
       });
     } catch (e) {
       setState(() {
         _errorMessage = e is CommandeServiceException
             ? e.message
-            : 'Erreur lors du chargement des commandes';
+            : 'Erreur lors du chargement des commandes: ${e.toString()}';
         _isLoading = false;
       });
     }
@@ -53,9 +92,17 @@ class _CommandesScreenState extends State<CommandesScreen> {
   @override
   Widget build(BuildContext context) {
     final today = DateTime.now();
-    final List<Commande> todays = _allOrders
-        .where((o) => _isSameDay(o.dateCommande, today))
-        .toList();
+    print('DEBUG: Total commandes reçues: ${_allOrders.length}');
+    print('DEBUG: Date aujourd\'hui: $today');
+    
+    // Afficher toutes les commandes (pas seulement celles d'aujourd'hui)
+    // Si vous voulez filtrer par jour, décommentez la ligne suivante
+    // final List<Commande> todays = _allOrders
+    //     .where((o) => _isSameDay(o.dateCommande, today))
+    //     .toList();
+    final List<Commande> todays = _allOrders; // Afficher toutes les commandes
+    
+    print('DEBUG: Commandes après filtre date: ${todays.length}');
     final filtered = todays.where((o) {
       switch (_selected) {
         case _Filter.all:
@@ -69,6 +116,9 @@ class _CommandesScreenState extends State<CommandesScreen> {
           return o.status == CommandeStatus.annulee;
       }
     }).toList();
+
+    // Trier par date de création (le plus récent d'abord)
+    filtered.sort((a, b) => b.dateCommande.compareTo(a.dateCommande));
 
     final int revenue = todays
         .where((o) => o.status == CommandeStatus.terminee)
@@ -169,10 +219,6 @@ class _CommandesScreenState extends State<CommandesScreen> {
     );
   }
 
-  bool _isSameDay(DateTime a, DateTime b) {
-    return a.year == b.year && a.month == b.month && a.day == b.day;
-  }
-
   String _formatAr(int amount) {
     final s = amount.toString();
     final buf = StringBuffer();
@@ -262,6 +308,8 @@ class _OrderTile extends StatelessWidget {
                 Expanded(
                   child: Text(
                     order.reference,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ),
@@ -277,6 +325,8 @@ class _OrderTile extends StatelessWidget {
                   ),
                   child: Text(
                     status,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: color,
                       fontSize: 12,
@@ -294,11 +344,15 @@ class _OrderTile extends StatelessWidget {
                   const SizedBox(width: 4),
                   Text(
                     _formatTime(order.dateCommande),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(color: cs.onSurfaceVariant),
                   ),
                   const Spacer(),
                   Text(
                     '${order.totalPrice.toStringAsFixed(0)} Ar',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ],
@@ -324,29 +378,65 @@ class _RevenueCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: cs.secondaryContainer,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: cs.outlineVariant),
-      ),
-      child: Row(
-        children: [
-          const Text('💵', style: TextStyle(fontSize: 18)),
-          const SizedBox(width: 8),
-          const Text(
-            'Total généré aujourd\'hui :',
-            style: TextStyle(fontWeight: FontWeight.w600),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isNarrow = constraints.maxWidth < 380;
+        final padding = isNarrow ? 12.0 : 14.0;
+
+        return Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(padding),
+          decoration: BoxDecoration(
+            color: cs.secondaryContainer,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: cs.outlineVariant),
           ),
-          const Spacer(),
-          Text(
-            amountLabel,
-            style: const TextStyle(fontWeight: FontWeight.w800),
-          ),
-        ],
-      ),
+          child: isNarrow
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Text('💵', style: TextStyle(fontSize: 18)),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: const Text(
+                            'Total généré aujourd\'hui :',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      amountLabel,
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                )
+              : Row(
+                  children: [
+                    const Text('💵', style: TextStyle(fontSize: 18)),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Total généré aujourd\'hui :',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    const Spacer(),
+                    Text(
+                      amountLabel,
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+        );
+      },
     );
   }
 }

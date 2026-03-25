@@ -251,6 +251,7 @@ class Commande {
   final DateTime dateCommande;
   final CommandeStatus status;
   final double totalPrice;
+  final int? userId;
 
   Commande({
     required this.id,
@@ -261,9 +262,18 @@ class Commande {
     required this.dateCommande,
     required this.status,
     required this.totalPrice,
+    this.userId,
   });
 
   factory Commande.fromJson(Map<String, dynamic> json) {
+    int? parseNullableInt(dynamic v) {
+      if (v == null) return null;
+      if (v is int) return v;
+      if (v is num) return v.toInt();
+      if (v is String) return int.tryParse(v);
+      return null;
+    }
+
     return Commande(
       id: json['id'] as int,
       reference: json['reference'] as String,
@@ -281,6 +291,7 @@ class Commande {
       dateCommande: DateTime.parse(json['date_commande'] as String),
       status: CommandeStatus.fromString(json['status'] as String),
       totalPrice: (json['total_price'] as num).toDouble(),
+      userId: parseNullableInt(json['user_id'] ?? json['userId']),
     );
   }
 
@@ -294,6 +305,7 @@ class Commande {
       'date_commande': dateCommande.toIso8601String(),
       'status': status.value,
       'total_price': totalPrice,
+      if (userId != null) 'user_id': userId,
     };
   }
 }

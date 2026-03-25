@@ -46,7 +46,9 @@ class TableTileCard extends StatelessWidget {
                   ),
               ],
             ),
-            padding: EdgeInsets.all(isCompact ? 10 : 12),
+            // Micro-optimisation: réduit légèrement la hauteur pour
+            // éviter le débordement sub-pixel sur petits écrans.
+            padding: EdgeInsets.all(isCompact ? 7 : 11),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -83,23 +85,31 @@ class TableTileCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                SizedBox(height: isCompact ? 6 : 8),
+                SizedBox(height: isCompact ? 4 : 7),
                 Text(
                   'Table ${table.number}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(color: fg, fontWeight: FontWeight.w700),
                 ),
-                SizedBox(height: isCompact ? 2 : 4),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 4,
+                SizedBox(height: isCompact ? 1 : 3),
+                Row(
+                  // Sur petits écrans, on force les chips sur une seule ligne
+                  // pour éviter les débordements verticaux.
                   children: [
-                    _MiniChip(label: 'Cap. ${table.capacity}', dark: useDark),
-                    _MiniChip(
-                      label: isAvailable ? 'Disponible' : 'Indisponible',
-                      color: accent,
-                      dark: useDark,
+                    Flexible(
+                      child: _MiniChip(
+                        label: 'Cap. ${table.capacity}',
+                        dark: useDark,
+                      ),
+                    ),
+                    SizedBox(width: isCompact ? 6 : 8),
+                    Flexible(
+                      child: _MiniChip(
+                        label: isAvailable ? 'Disponible' : 'Indisponible',
+                        color: accent,
+                        dark: useDark,
+                      ),
                     ),
                   ],
                 ),
@@ -130,7 +140,7 @@ class _MiniChip extends StatelessWidget {
               : Colors.black.withOpacity(0.06));
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(999),
@@ -138,6 +148,9 @@ class _MiniChip extends StatelessWidget {
       ),
       child: Text(
         label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        softWrap: false,
         style: TextStyle(color: fg, fontSize: 11, fontWeight: FontWeight.w600),
       ),
     );

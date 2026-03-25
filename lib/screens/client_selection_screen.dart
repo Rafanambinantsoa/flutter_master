@@ -41,50 +41,54 @@ class _ClientSelectionScreenState extends State<ClientSelectionScreen> {
             ),
             const SizedBox(height: 32),
             Expanded(
-              child: Column(
-                children: [
-                  _ClientTypeCard(
-                    type: ClientType.noReservation,
-                    title: 'Sans réservation',
-                    description:
-                        'Client sans réservation. Proposer une table disponible.',
-                    icon: Icons.person_outline,
-                    isSelected: _selectedType == ClientType.noReservation,
-                    onTap: () {
-                      setState(() {
-                        _selectedType = ClientType.noReservation;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  _ClientTypeCard(
-                    type: ClientType.standardReservation,
-                    title: 'Réservation standard',
-                    description:
-                        'Client avec réservation de table. Vérifier et assigner la table réservée.',
-                    icon: Icons.event_outlined,
-                    isSelected: _selectedType == ClientType.standardReservation,
-                    onTap: () {
-                      setState(() {
-                        _selectedType = ClientType.standardReservation;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  _ClientTypeCard(
-                    type: ClientType.prepaidReservation,
-                    title: 'Réservation avec menu prépayé',
-                    description:
-                        'Client avec réservation incluant menu prépayé. Afficher la commande pré-remplie.',
-                    icon: Icons.restaurant_menu,
-                    isSelected: _selectedType == ClientType.prepaidReservation,
-                    onTap: () {
-                      setState(() {
-                        _selectedType = ClientType.prepaidReservation;
-                      });
-                    },
-                  ),
-                ],
+              child: SingleChildScrollView(
+                // Important sur petits écrans : permet de scroller au lieu de dépasser le viewport.
+                child: Column(
+                  children: [
+                    _ClientTypeCard(
+                      type: ClientType.noReservation,
+                      title: 'Sans réservation',
+                      description:
+                          'Client sans réservation. Proposer une table disponible.',
+                      icon: Icons.person_outline,
+                      isSelected: _selectedType == ClientType.noReservation,
+                      onTap: () {
+                        setState(() {
+                          _selectedType = ClientType.noReservation;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    _ClientTypeCard(
+                      type: ClientType.standardReservation,
+                      title: 'Réservation standard',
+                      description:
+                          'Client avec réservation de table. Vérifier et assigner la table réservée.',
+                      icon: Icons.event_outlined,
+                      isSelected:
+                          _selectedType == ClientType.standardReservation,
+                      onTap: () {
+                        setState(() {
+                          _selectedType = ClientType.standardReservation;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    _ClientTypeCard(
+                      type: ClientType.prepaidReservation,
+                      title: 'Réservation avec menu prépayé',
+                      description:
+                          'Client avec réservation incluant menu prépayé. Afficher la commande pré-remplie.',
+                      icon: Icons.restaurant_menu,
+                      isSelected: _selectedType == ClientType.prepaidReservation,
+                      onTap: () {
+                        setState(() {
+                          _selectedType = ClientType.prepaidReservation;
+                        });
+                      },
+                    ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 24),
@@ -193,6 +197,8 @@ class _ClientTypeCard extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                       color: isSelected ? cs.primary : cs.onSurface,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -202,6 +208,8 @@ class _ClientTypeCard extends StatelessWidget {
                           ? cs.onPrimaryContainer
                           : cs.onSurfaceVariant,
                     ),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),

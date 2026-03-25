@@ -488,7 +488,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     return ListTile(
                       title: Row(
                         children: [
-                          Expanded(child: Text(name)),
+                          Expanded(
+                            child: Text(
+                              name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
                           if (status != null) ...[
                             const SizedBox(width: 8),
                             _StatusBadge(status: status),
@@ -501,6 +507,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                         children: [
                           Text(
                             '${(price * qty).toStringAsFixed(0)} Ar',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: const TextStyle(fontWeight: FontWeight.w700),
                           ),
                           // Afficher le bouton de retrait uniquement si le statut est "en_attente"
@@ -638,6 +646,8 @@ class _HeaderInfo extends StatelessWidget {
               Expanded(
                 child: Text(
                   'Commande $id',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontWeight: FontWeight.w800),
                 ),
               ),
@@ -656,6 +666,8 @@ class _HeaderInfo extends StatelessWidget {
                   ),
                   child: Text(
                     status!.displayLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: status!.displayColor,
                       fontSize: 12,
@@ -671,13 +683,25 @@ class _HeaderInfo extends StatelessWidget {
               if (createdAt != null) ...[
                 const Icon(Icons.access_time, size: 14),
                 const SizedBox(width: 4),
-                Text(_formatDate(createdAt!)),
+                Flexible(
+                  child: Text(
+                    _formatDate(createdAt!),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
                 const SizedBox(width: 12),
               ],
               if (total != null) ...[
                 const Icon(Icons.payments_outlined, size: 14),
                 const SizedBox(width: 4),
-                Text('${total!.toStringAsFixed(0)} Ar'),
+                Flexible(
+                  child: Text(
+                    '${total!.toStringAsFixed(0)} Ar',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               ],
             ],
           ),
@@ -854,6 +878,8 @@ class _InfoRow extends StatelessWidget {
                   color: cs.onSurfaceVariant,
                   fontWeight: FontWeight.w500,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 2),
               Text(
@@ -863,6 +889,8 @@ class _InfoRow extends StatelessWidget {
                   color: cs.onSurface,
                   fontWeight: FontWeight.w600,
                 ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
@@ -947,6 +975,8 @@ class _StatusBadge extends StatelessWidget {
       ),
       child: Text(
         _getStatusLabel(status),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: TextStyle(
           color: statusColor,
           fontSize: 11,

@@ -32,9 +32,18 @@ class CommandeService {
       }
 
       final List<dynamic> data = jsonDecode(response.body) as List<dynamic>;
-      return data
+      print('DEBUG: Nombre de commandes reçues: ${data.length}');
+      if (data.isNotEmpty) {
+        print('DEBUG: Première commande: ${data[0]}');
+      }
+      final commandes = data
           .map((e) => Commande.fromJson(e as Map<String, dynamic>))
           .toList();
+      print('DEBUG: Commandes parsées: ${commandes.length}');
+      for (var cmd in commandes) {
+        print('DEBUG: Commande ${cmd.reference} - Date: ${cmd.dateCommande} - Status: ${cmd.status.value}');
+      }
+      return commandes;
     } on http.ClientException catch (e) {
       throw CommandeServiceException(
         message: 'Erreur de connexion: ${e.message}',
