@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../data/mock_repository.dart';
 import '../models/table.dart';
 import '../services/tables_service.dart';
-import '../components/suggested_table_card.dart';
 import '../components/table_tile_card.dart';
 import '../widgets/session_drawer.dart';
 import '../components/notification_badge_icon.dart'; // Added
@@ -17,9 +16,6 @@ class TablesScreen extends StatefulWidget {
 }
 
 class _TablesScreenState extends State<TablesScreen> {
-  final TextEditingController _peopleCtrl = TextEditingController(text: '2');
-  int _people = 2;
-  DiningTable? _suggested;
   bool _isLoading = false;
   List<DiningTable> _availableTables = [];
   String? _plageHoraire; // Pour afficher la plage horaire utilisée
@@ -30,12 +26,6 @@ class _TablesScreenState extends State<TablesScreen> {
   void initState() {
     super.initState();
     _loadAvailableTables();
-  }
-
-  @override
-  void dispose() {
-    _peopleCtrl.dispose();
-    super.dispose();
   }
 
   Future<void> _loadAvailableTables() async {
@@ -88,34 +78,6 @@ class _TablesScreenState extends State<TablesScreen> {
     }
   }
 
-  void _suggestTable() {
-    if (_availableTables.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Aucune table disponible pour cette plage horaire'),
-        ),
-      );
-      return;
-    }
-
-    // Trouver une table avec la capacité suffisante
-    final suitable = _availableTables
-        .where((t) => t.capacity >= _people)
-        .toList();
-    if (suitable.isNotEmpty) {
-      setState(() {
-        _suggested = suitable.first;
-      });
-    } else {
-      // Si aucune table n'a la capacité exacte, prendre la plus grande disponible
-      setState(() {
-        _suggested = _availableTables.reduce(
-          (a, b) => a.capacity > b.capacity ? a : b,
-        );
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -149,155 +111,6 @@ class _TablesScreenState extends State<TablesScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final bool isNarrow = constraints.maxWidth < 360;
-
-                final title = Text(
-                  'Tables disponibles',
-                  style: Theme.of(context).textTheme.titleLarge,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                );
-
-                final button = OutlinedButton.icon(
-                  onPressed: () {
-                    Navigator.of(context).pushNamed('/client-selection');
-                  },
-                  icon: const Icon(Icons.person_add),
-                  label: const Text('Nouveau client'),
-                );
-
-                if (isNarrow) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      title,
-                      const SizedBox(height: 10),
-                      button,
-                    ],
-                  );
-                }
-
-                return Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Flexible(child: title),
-                    const SizedBox(width: 12),
-                    button,
-                  ],
-                );
-              },
-            ),
-            const SizedBox(height: 16),
-            // Section pour suggérer une table
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Client sans réservation',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        final isNarrow = constraints.maxWidth < 360;
-
-                        if (isNarrow) {
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Row(
-                                children: [
-                                  const Text('Personnes:'),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: TextField(
-                                      controller: _peopleCtrl,
-                                      keyboardType: TextInputType.number,
-                                      decoration: const InputDecoration(
-                                        border: OutlineInputBorder(),
-                                        isDense: true,
-                                      ),
-                                      onChanged: (value) {
-                                        final parsed = int.tryParse(value);
-                                        if (parsed != null && parsed > 0) {
-                                          setState(() => _people = parsed);
-                                        }
-                                      },
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              FilledButton(
-                                onPressed: _isLoading ? null : _suggestTable,
-                                child: const Text('Proposer table'),
-                              ),
-                            ],
-                          );
-                        }
-
-                        return Row(
-                          children: [
-                            const Text('Personnes:'),
-                            const SizedBox(width: 8),
-                            SizedBox(
-                              width: 120,
-                              child: TextField(
-                                controller: _peopleCtrl,
-                                keyboardType: TextInputType.number,
-                                decoration: const InputDecoration(
-                                  border: OutlineInputBorder(),
-                                  isDense: true,
-                                ),
-                                onChanged: (value) {
-                                  final parsed = int.tryParse(value);
-                                  if (parsed != null && parsed > 0) {
-                                    setState(() => _people = parsed);
-                                  }
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Align(
-                                alignment: Alignment.centerRight,
-                                child: FilledButton(
-                                  onPressed:
-                                      _isLoading ? null : _suggestTable,
-                                  child: const Text('Proposer table'),
-                                ),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            if (_suggested != null)
-              SuggestedTableCard(
-                table: _suggested!,
-                isAvailable: _availableTables.any(
-                  (t) => t.id == _suggested!.id,
-                ),
-                onSelect: () {
-                  Navigator.of(context).pushNamed(
-                    '/client-info',
-                    arguments: {'table': _suggested!},
-                  );
-                },
-              ),
-            if (_suggested != null) const SizedBox(height: 16),
             // Liste des tables disponibles
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,

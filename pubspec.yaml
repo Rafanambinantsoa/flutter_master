@@ -48,6 +48,9 @@ dependencies:
   audioplayers: ^6.0.0
   haptic_feedback: ^0.6.4+3
 
+  # QR code pour le lien menu panier (cartMenu)
+  qr_flutter: ^4.1.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

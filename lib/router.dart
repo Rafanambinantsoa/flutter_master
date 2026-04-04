@@ -19,6 +19,7 @@ import 'screens/reservation_detail_screen.dart';
 import 'screens/reservation_detail_prepaid_screen.dart';
 import 'screens/available_tables_screen.dart';
 import 'screens/client_info_screen.dart';
+import 'screens/cart_menu_qr_screen.dart';
 import 'models/client_info.dart';
 
 /// Widget helper pour protéger les routes
@@ -153,6 +154,10 @@ Route<dynamic> appRouter(
     case '/notifications':
       return MaterialPageRoute(
         builder: (_) => _ProtectedRoute(child: const NotificationsScreen()),
+      );
+    case '/cart-menu-qr':
+      return MaterialPageRoute(
+        builder: (_) => _ProtectedRoute(child: const CartMenuQrScreen()),
       );
     default:
       // dynamic order details: /orders/{id}

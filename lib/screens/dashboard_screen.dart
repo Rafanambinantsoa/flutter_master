@@ -110,26 +110,26 @@ class DashboardScreen extends StatelessWidget {
                     _ActionCard(
                       title: 'Commandes',
                       icon: Icons.receipt_long,
-                      color: cs.primaryContainer,
+                      color: cs.primary,
                       onTap: () => Navigator.of(context).pushNamed('/orders'),
                     ),
                     _ActionCard(
                       title: 'Tables',
                       icon: Icons.table_restaurant,
-                      color: cs.secondaryContainer,
+                      color: cs.primary,
                       onTap: () => Navigator.of(context).pushNamed('/tables'),
                     ),
                     _ActionCard(
                       title: 'Notifications',
                       icon: Icons.notifications,
-                      color: cs.tertiaryContainer,
+                      color: cs.primary,
                       onTap: () =>
                           Navigator.of(context).pushNamed('/notifications'),
                     ),
                     _ActionCard(
                       title: 'Réservations',
                       icon: Icons.event,
-                      color: cs.errorContainer,
+                      color: cs.primary,
                       onTap: () {
                         // Navigation vers la recherche de réservation
                         Navigator.of(context).pushNamed(
@@ -137,6 +137,13 @@ class DashboardScreen extends StatelessWidget {
                           arguments: {'type': null},
                         );
                       },
+                    ),
+                    _ActionCard(
+                      title: 'QR code',
+                      icon: Icons.qr_code_2,
+                      color: cs.primary,
+                      onTap: () =>
+                          Navigator.of(context).pushNamed('/cart-menu-qr'),
                     ),
                   ],
                 );
